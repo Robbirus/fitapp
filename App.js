@@ -1,20 +1,25 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { DatabaseProvider } from "./src/db/DatabaseContext";
+import LogStack from "./src/navigations/LogStacks";
+import ActivityScreen from "./src/screens/ActivityScreen";
+import ScannerScreen from "./src/screens/ScannerScreen";
+import DashboardScreen from "./src/screens/DashboardScreen";
+import ProfileStacks from "./src/navigations/ProfileStacks";
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <DatabaseProvider>
+      <NavigationContainer>
+        <Tab.Navigator>
+          <Tab.Screen name="Dashboard" component={DashboardScreen} />
+          <Tab.Screen name="Journal" component={LogStack} />
+          <Tab.Screen name="Activité" component={ActivityScreen} />
+          <Tab.Screen name="Profile" component={ProfileStacks} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </DatabaseProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
