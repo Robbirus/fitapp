@@ -49,15 +49,23 @@ export default function DashboardScreen() {
   const last7Days = Array.from({ length: 7 }, (_, i) =>
     getDateNDaysAgoISO(6 - i),
   );
-  const chartLabels = last7Days.map((date) => date.slice(5)); // "MM-DD"
-  const barData = last7Days.map((date) => {
-    const found = weekCalories.find((d) => d.date === date);
-    return {
-      label: date.slice(5),
-      value: found ? Math.round(found.total_calories) : 0,
-    };
-  });
+const formatKcal = (value) => {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  return `${value}`;
+};
 
+  const chartLabels = last7Days.map((date) => date.slice(5)); // "MM-DD"
+const barData = last7Days.map((date) => {
+  const found = weekCalories.find((d) => d.date === date);
+  const value = found ? Math.round(found.total_calories) : 0;
+  return {
+    label: date.slice(5),
+    value,
+    topLabelComponent: () => (
+      <Text style={{ fontSize: 10, color: "#555" }}>{formatKcal(value)}</Text>
+    ),
+  };
+});
   const loadData = async () => {
     const s = await loadSettings(db);
     const since = getDateNDaysAgoISO(6); // 6 days back + today = 7 days
@@ -237,14 +245,15 @@ export default function DashboardScreen() {
           data={barData}
           width={280}
           height={200}
+          topLabelContainerStyle={{paddingBottom: 4}}
           barWidth={22}
           initialSpacing={10}
           spacing={18}
           barBorderRadius={4}
           frontColor="#4CAF50"
-          showValuesAsTopLabel
           // The goal line is added in 4 simple lines:
           showReferenceLine1
+          maxValue={settings.calorie_goal * 1.1}
           referenceLine1Position={settings.calorie_goal}
           referenceLine1Config={{
             color: "#FF5722",

@@ -46,6 +46,17 @@ export default function ScannerScreen({ navigation }) {
     );
   }
 
+  const openManualEntry = () => {
+  setName("");
+  setCalories100g("");
+  setProtein100g("");
+  setCarbs100g("");
+  setFat100g("");
+  setQuantity("");
+  setShowMacros(true);  // displays the macros directly, useful for manual entry
+  setFound(true);
+};
+
   const handleScan = async ({ data: barcode }) => {
     if (!scanning) return;
     setScanning(false);
@@ -58,11 +69,20 @@ export default function ScannerScreen({ navigation }) {
       const json = await response.json();
 
       if (json.status !== 1) {
-        Alert.alert(
-          "Produit non trouvé",
-          "Ce code-barres n'est pas dans la base Open Food Facts.",
-        );
-        setScanning(true);
+Alert.alert(
+  "Produit non trouvé",
+  "Ce code-barres n'est pas dans la base Open Food Facts.",
+  [
+    {
+      text: "Réessayer",
+      onPress: () => setScanning(true),  // <- only when the user presses
+    },
+    {
+      text: "Saisir manuellement",
+      onPress: () => openManualEntry(),     // <- opens the empty form
+    },
+  ]
+);
       } else {
         const p = json.product;
         const n = p.nutriments || {};
