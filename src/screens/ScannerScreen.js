@@ -69,20 +69,20 @@ export default function ScannerScreen({ navigation }) {
       const json = await response.json();
 
       if (json.status !== 1) {
-Alert.alert(
-  "Produit non trouvé",
-  "Ce code-barres n'est pas dans la base Open Food Facts.",
-  [
-    {
-      text: "Réessayer",
-      onPress: () => setScanning(true),  // <- only when the user presses
-    },
-    {
-      text: "Saisir manuellement",
-      onPress: () => openManualEntry(),     // <- opens the empty form
-    },
-  ]
-);
+        Alert.alert(
+          "Produit non trouvé",
+          "Ce code-barres n'est pas dans la base Open Food Facts.",
+          [
+            {
+              text: "Réessayer",
+              onPress: () => setScanning(true),  // <- only when the user presses
+            },
+            {
+              text: "Saisir manuellement",
+              onPress: () => openManualEntry(),     // <- opens the empty form
+            },
+          ]
+        );
       } else {
         const p = json.product;
         const n = p.nutriments || {};

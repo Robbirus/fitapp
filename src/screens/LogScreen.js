@@ -23,7 +23,10 @@ export default function JournalScreen({ navigation }) {
   const [food, setFood] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [editValue, setEditValue] = useState("");
+  const [editQuantity, setEditQuantity] = useState("");
+  const [editProtein, setEditProtein] = useState("");
+  const [editCarb, setEditCarb] = useState("");
+  const [editFat, setEditFat] = useState("");
 
   const today = getTodayISO();
 
@@ -42,7 +45,9 @@ export default function JournalScreen({ navigation }) {
     if (expandedId === id) {
       setExpandedId(null);
       setEditingId(null); // reset edit mode
-      setEditValue(""); // reset value
+      setEditQuantity(""); // reset value
+      setEditCarb("");
+      setEditFat("");
     } else {
       setExpandedId(id);
     }
@@ -63,10 +68,10 @@ export default function JournalScreen({ navigation }) {
       await updateDiaryEntry(db, editingId, {
         name: item.name,
         calories100g: item.calories_100g,
-        protein100g: item.protein_100g,
-        carbs100g: item.carbs_100g,
-        fat100g: item.fat_100g,
-        quantityG: parseFloat(editValue),
+        protein100g: parseFloat(editProtein),
+        carbs100g: parseFloat(editCarb),
+        fat100g: parseFloat(editFat),
+        quantityG: parseFloat(editQuantity),
       });
     } catch (error) {
       console.log(error);
@@ -119,10 +124,34 @@ export default function JournalScreen({ navigation }) {
                   <View style={globalStyles.details}>
                     <Text>Quantité (g) :</Text>
                     <TextInput
-                      value={editValue}
+                      value={editQuantity}
                       keyboardType="numeric"
-                      onChangeText={setEditValue}
+                      onChangeText={setEditQuantity}
                       placeholder="Quantité"
+                    />
+
+                    <Text>Protéines (/100g) : </Text>
+                    <TextInput
+                      value={editProtein}
+                      keyboardType="numeric"
+                      onChangeText={setEditProtein}
+                      placeholder="Protéine"
+                    />                    
+                    
+                    <Text>Glucides (/100g) : </Text>
+                    <TextInput
+                      value={editCarb}
+                      keyboardType="numeric"
+                      onChangeText={setEditCarb}
+                      placeholder="Glucides"
+                    />                    
+                    
+                    <Text>Lipides (/100g) : </Text>
+                    <TextInput
+                      value={editFat}
+                      keyboardType="numeric"
+                      onChangeText={setEditFat}
+                      placeholder="Lipides"
                     />
 
                     <TouchableOpacity
@@ -158,7 +187,10 @@ export default function JournalScreen({ navigation }) {
                       ]}
                       onPress={() => {
                         setEditingId(item.id);
-                        setEditValue(item.quantity_g.toString());
+                        setEditQuantity(item.quantity_g.toString());
+                        setEditProtein(item.protein_100g.toString());
+                        setEditCarb(item.carbs_100g.toString());
+                        setEditFat(item.fat_100g.toString());
                       }}
                     >
                       <Text style={globalStyles.primaryButtonText}>
