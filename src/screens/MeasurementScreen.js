@@ -111,24 +111,6 @@ export default function MeasurementScreen({ navigation }) {
     }
   };
 
-  const generateTestData = async () => {
-    await db.execAsync("DELETE FROM body_measurements"); // clean slate before generating test data
-    for (let i = 90; i >= 0; i -= 3) {
-      const date = getDateNDaysAgoISO(i);
-      const simulatedWaist = 80 - i * 0.05 + (Math.random() * 0.6 - 0.3);
-      const simulatedHip = 90 - i * 0.05 + (Math.random() * 0.6 - 0.3);
-      const simulatedNeck = 35 - i * 0.05 + (Math.random() * 0.6 - 0.3);
-      await addBodyMeasurementEntry(
-        db,
-        Math.round(simulatedNeck * 10) / 10,
-        Math.round(simulatedWaist * 10) / 10,
-        Math.round(simulatedHip * 10) / 10,
-        date,
-      );
-    }
-    loadHistory(period);
-  };
-
   const maxPoints = period === "week" ? 7 : period === "month" ? 30 : 52;
   const recentHistory = history.slice(-maxPoints);
 
@@ -216,16 +198,6 @@ export default function MeasurementScreen({ navigation }) {
           onPress={saveMeasurement}
         >
           <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          activeOpacity={0.6}
-          onPress={generateTestData}
-        >
-          <Text style={globalStyles.primaryButtonText}>
-            🧪 Générer données de test
-          </Text>
         </TouchableOpacity>
 
         {history.length === 0 ? (

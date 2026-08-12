@@ -67,16 +67,6 @@ export default function WeightScreen({ navigation }) {
     loadHistory(newPeriod); // reload with the value we have just chosen, explicitly
   };
 
-  const generateTestData = async () => {
-    await db.execAsync("DELETE FROM weight_entries"); // clean slate before generating test data
-    for (let i = 90; i >= 0; i -= 3) {
-      const date = getDateNDaysAgoISO(i);
-      const simulatedWeight = 80 - i * 0.05 + (Math.random() * 0.6 - 0.3);
-      await addWeightEntry(db, Math.round(simulatedWeight * 10) / 10, date);
-    }
-    loadHistory(period);
-  };
-
   const loadHistory = async (selectedPeriod) => {
     const days =
       selectedPeriod === "week" ? 7 : selectedPeriod === "month" ? 30 : 365;
@@ -177,16 +167,6 @@ export default function WeightScreen({ navigation }) {
           onPress={saveWeight}
         >
           <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          activeOpacity={0.6}
-          onPress={generateTestData}
-        >
-          <Text style={globalStyles.primaryButtonText}>
-            🧪 Générer données de test
-          </Text>
         </TouchableOpacity>
 
         {history.length === 0 ? (
