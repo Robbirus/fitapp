@@ -17,11 +17,21 @@ import {
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 import { calculateBodyFatPercentage } from "../utils/BodyCompositionCalculator";
+import { Dimensions } from "react-native";
 import {
   calculateWaistHipRatio,
   obtainWHRCategory,
   obtainBodyFatCategory,
 } from "../utils/BodyCompositionCalculator";
+
+const screenWidth = Dimensions.get("window").width;
+
+const PERIOD_OPTIONS = [
+  { value: "week", label: "Semaine" },
+  { value: "month", label: "Mois" },
+  { value: "year", label: "Année" },
+];
+
 
 export default function BodyFatScreen({ navigation }) {
   const db = useDatabase();
@@ -45,7 +55,6 @@ export default function BodyFatScreen({ navigation }) {
     setWaist(latestMeasurement?.waist || null);
     setHip(latestMeasurement?.hip || null);
     setNeck(latestMeasurement?.neck || null);
-    setHeight(latestMeasurement?.height || null);
 
     setGender(latestProfile?.gender || null);
     setHeight(latestProfile?.height || null);

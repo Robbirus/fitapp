@@ -62,8 +62,8 @@ export default function BMIScreen({ navigation }) {
         Catégorie : {obtainBMICategory(bmi)}
       </Text>
       <Button
-        title="Modifier les paramètres du profil"
-        onPress={() => navigation.navigate("Profil")}
+        title="Modifier les paramètres du profile"
+        onPress={() => navigation.navigate("Votre Profile")}
       />
     </View>
   );
