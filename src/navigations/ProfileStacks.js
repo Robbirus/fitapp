@@ -11,7 +11,7 @@ const Stack = createNativeStackNavigator();
 export default function ProfileStacks() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Profil" component={ProfileScreen} />
+      <Stack.Screen name="Votre Profile" component={ProfileScreen} />
       <Stack.Screen name="Poids" component={WeightScreen} />
       <Stack.Screen name="BMI" component={BMIScreen} />
       <Stack.Screen name="Mesures" component={MeasurementScreen} />
