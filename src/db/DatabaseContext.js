@@ -48,7 +48,8 @@ export function DatabaseProvider({ children }) {
         weight_goal TEXT NOT NULL DEFAULT 'maintain',
         weight_goal_rate REAL NOT NULL DEFAULT 0,
         goal_start_date TEXT,
-        goal_start_weight REAL
+        goal_start_weight REAL,
+        ethnicity TEXT NOT NULL DEFAULT 'caucasian'
       );
 
       INSERT OR IGNORE INTO profileSettings (id) VALUES (1);

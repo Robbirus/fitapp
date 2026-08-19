@@ -49,23 +49,23 @@ export default function DashboardScreen() {
   const last7Days = Array.from({ length: 7 }, (_, i) =>
     getDateNDaysAgoISO(6 - i),
   );
-const formatKcal = (value) => {
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-  return `${value}`;
-};
+  const formatKcal = (value) => {
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+    return `${value}`;
+  };
 
   const chartLabels = last7Days.map((date) => date.slice(5)); // "MM-DD"
-const barData = last7Days.map((date) => {
-  const found = weekCalories.find((d) => d.date === date);
-  const value = found ? Math.round(found.total_calories) : 0;
-  return {
-    label: date.slice(5),
-    value,
-    topLabelComponent: () => (
-      <Text style={{ fontSize: 10, color: "#555" }}>{formatKcal(value)}</Text>
-    ),
-  };
-});
+  const barData = last7Days.map((date) => {
+    const found = weekCalories.find((d) => d.date === date);
+    const value = found ? Math.round(found.total_calories) : 0;
+    return {
+      label: date.slice(5),
+      value,
+      topLabelComponent: () => (
+        <Text style={{ fontSize: 10, color: "#555" }}>{formatKcal(value)}</Text>
+      ),
+    };
+  });
   const loadData = async () => {
     const s = await loadSettings(db);
     const since = getDateNDaysAgoISO(6); // 6 days back + today = 7 days
@@ -190,9 +190,8 @@ const barData = last7Days.map((date) => {
       </View>
       <View style={{ alignItems: "center", marginVertical: 20 }}>
         <DonutRing
-          consumed={calConsumed}
-          used={calBurned}
-          goal={settings.calorie_goal}
+          progress={Math.min(calConsumed / settings.calorie_goal, 1)}
+          centerValue={settings.calorie_goal - calConsumed + calBurned}
           textValue="Kcal restantes"
         />
       </View>
@@ -245,7 +244,7 @@ const barData = last7Days.map((date) => {
           data={barData}
           width={280}
           height={200}
-          topLabelContainerStyle={{paddingBottom: 4}}
+          topLabelContainerStyle={{ paddingBottom: 4 }}
           barWidth={22}
           initialSpacing={10}
           spacing={18}

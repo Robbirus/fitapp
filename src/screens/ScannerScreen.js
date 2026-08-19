@@ -47,15 +47,15 @@ export default function ScannerScreen({ navigation }) {
   }
 
   const openManualEntry = () => {
-  setName("");
-  setCalories100g("");
-  setProtein100g("");
-  setCarbs100g("");
-  setFat100g("");
-  setQuantity("");
-  setShowMacros(true);  // displays the macros directly, useful for manual entry
-  setFound(true);
-};
+    setName("");
+    setCalories100g("");
+    setProtein100g("");
+    setCarbs100g("");
+    setFat100g("");
+    setQuantity("");
+    setShowMacros(true); // displays the macros directly, useful for manual entry
+    setFound(true);
+  };
 
   const handleScan = async ({ data: barcode }) => {
     if (!scanning) return;
@@ -75,13 +75,13 @@ export default function ScannerScreen({ navigation }) {
           [
             {
               text: "Réessayer",
-              onPress: () => setScanning(true),  // <- only when the user presses
+              onPress: () => setScanning(true), // <- only when the user presses
             },
             {
               text: "Saisir manuellement",
-              onPress: () => openManualEntry(),     // <- opens the empty form
+              onPress: () => openManualEntry(), // <- opens the empty form
             },
-          ]
+          ],
         );
       } else {
         const p = json.product;
@@ -122,7 +122,7 @@ export default function ScannerScreen({ navigation }) {
       resetScan();
       navigation.goBack();
     } catch (error) {
-      console.log("ERREUR insertion:", error.message);
+      console.log("ERROR insertion:", error.message);
     }
   };
 

@@ -13,10 +13,10 @@ export default function ProfileStacks() {
     <Stack.Navigator>
       <Stack.Screen name="Votre Profile" component={ProfileScreen} />
       <Stack.Screen name="Poids" component={WeightScreen} />
-      <Stack.Screen name="BMI" component={BMIScreen} />
+      <Stack.Screen name="IMC" component={BMIScreen} />
       <Stack.Screen name="Mesures" component={MeasurementScreen} />
-      <Stack.Screen name="RTH" component={WHRScreen} />
-      <Stack.Screen name="Graisse Corporelle" component={BodyFatScreen} />
+      <Stack.Screen name="Ratio Taille" component={WHRScreen} />
+      <Stack.Screen name="Composition Corporelle" component={BodyFatScreen} />
     </Stack.Navigator>
   );
 }

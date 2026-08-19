@@ -21,10 +21,10 @@ export function calculateGoals({
   // 1. BMR (basal metabolism) - Mifflin-St Jeor formula
   let bmr;
   if (gender === 1) {
-    // Homme
+    // Male
     bmr = 10 * weight + 6.25 * height - 5 * age + 5;
   } else {
-    // Femme (ou autre, approximation)
+    // Female
     bmr = 10 * weight + 6.25 * height - 5 * age - 161;
   }
 
@@ -48,8 +48,8 @@ export function calculateGoals({
   // Proteins: 1.8g per kg of body weight (good benchmark to preserve muscle, loss or gain)
   const proteinGoal = Math.round(weight * 1.8);
 
-  // Fat: 25% of total calories (1g of fat = 9 kcal)
-  const fatGoal = Math.round((calorieGoal * 0.25) / 9);
+  // Fat: Based on body weight (e.g., 0.8g/kg) rather than a fixed % level
+  const fatGoal = Math.round(weight * 0.8);
 
   // Carbs: the remaining calories (1g of carbs = 4 kcal, like proteins)
   const remainingKcal = calorieGoal - proteinGoal * 4 - fatGoal * 9;

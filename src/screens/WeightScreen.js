@@ -317,7 +317,7 @@ export default function WeightScreen({ navigation }) {
       <TouchableOpacity
         style={globalStyles.primaryButton}
         activeOpacity={0.6}
-        onPress={() => navigation.navigate("BMI")}
+        onPress={() => navigation.navigate("IMC")}
       >
         <Text style={globalStyles.primaryButtonText}>Voir IMC</Text>
       </TouchableOpacity>

@@ -8,7 +8,7 @@ export default function WeightStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Masse" component={WeightScreen} />
-      <Stack.Screen name="BMI" component={BMIScreen} />
+      <Stack.Screen name="IMC" component={BMIScreen} />
     </Stack.Navigator>
   );
 }

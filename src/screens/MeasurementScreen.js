@@ -106,6 +106,7 @@ export default function MeasurementScreen({ navigation }) {
       );
 
       console.log("Measurement saved successfully.");
+      loadLatestMeasurement();
     } catch (error) {
       console.error("Error saving measurement:", error);
     }
@@ -373,7 +374,7 @@ export default function MeasurementScreen({ navigation }) {
       <TouchableOpacity
         style={globalStyles.primaryButton}
         activeOpacity={0.6}
-        onPress={() => navigation.navigate("RTH")}
+        onPress={() => navigation.navigate("Ratio Taille")}
       >
         <Text style={globalStyles.primaryButtonText}>
           Voir Ratio Taille-Hanche
@@ -383,10 +384,10 @@ export default function MeasurementScreen({ navigation }) {
       <TouchableOpacity
         style={globalStyles.primaryButton}
         activeOpacity={0.6}
-        onPress={() => navigation.navigate("Graisse Corporelle")}
+        onPress={() => navigation.navigate("Composition Corporelle")}
       >
         <Text style={globalStyles.primaryButtonText}>
-          Voir Pourcentage de Graisse Corporelle
+          Voir Composition Corporelle
         </Text>
       </TouchableOpacity>
     </>

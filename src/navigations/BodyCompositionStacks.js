@@ -9,8 +9,8 @@ export default function BodyCompositionStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Mesure" component={MeasurementScreen} />
-      <Stack.Screen name="RTH" component={WHRScreen} />
-      <Stack.Screen name="Graisse Corporelle" component={BodyFatScreen} />
+      <Stack.Screen name="Ratio Taille" component={WHRScreen} />
+      <Stack.Screen name="Composition Corporelle" component={BodyFatScreen} />
     </Stack.Navigator>
   );
 }

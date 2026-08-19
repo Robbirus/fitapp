@@ -1,12 +1,10 @@
 import Svg, { Circle, Text as SvgText } from "react-native-svg";
 
-export default function DonutRing({ consumed, used, goal, textValue }) {
+export default function DonutRing({ progress, centerValue, textValue }) {
   const radius = 80;
   const strokeWidth = 15;
   const circumference = 2 * Math.PI * radius;
-  const progress = Math.min(consumed / goal, 1);
   const offset = circumference * (1 - progress);
-  const remaining = goal - consumed + used;
   const size = (radius + strokeWidth) * 2;
 
   return (
@@ -44,7 +42,7 @@ export default function DonutRing({ consumed, used, goal, textValue }) {
         fontWeight="bold"
         fill="#333"
       >
-        {remaining}
+        {centerValue}
       </SvgText>
       <SvgText
         x={size / 2}

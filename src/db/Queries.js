@@ -60,6 +60,13 @@ export async function loadWeightHistory(db) {
   return await db.getAllAsync("SELECT * FROM weight_entries ORDER BY id DESC");
 }
 
+export async function loadLatestWeightWithDate(db) {
+  const row = await db.getFirstAsync(
+    "SELECT * FROM weight_entries ORDER BY id DESC LIMIT 1",
+  );
+  return row ? { value: row.value, date: row.date } : null;
+}
+
 export async function addWeightEntry(db, value, date) {
   return await db.runAsync(
     "INSERT INTO weight_entries (value, date) VALUES (?, ?)",
@@ -150,7 +157,7 @@ export async function updateProfileSettings(db, profile) {
   return await db.runAsync(
     `UPDATE profileSettings
      SET name = ?, height = ?, age = ?, gender = ?, activity_level = ?,
-         weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?
+         weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?, ethnicity = ?
      WHERE id = 1`,
     [
       profile.name,
@@ -162,6 +169,7 @@ export async function updateProfileSettings(db, profile) {
       profile.weightGoalRate,
       profile.goalStartDate,
       profile.goalStartWeight,
+      profile.ethnicity,
     ],
   );
 }
@@ -170,7 +178,7 @@ export async function loadLatestWeight(db) {
   const row = await db.getFirstAsync(
     "SELECT * FROM weight_entries ORDER BY id DESC LIMIT 1",
   );
-  return row ? row.value : null;
+  return row ? { value: row.value, date: row.date } : null;
 }
 
 // --- Body Measurements ---
@@ -198,6 +206,16 @@ export async function deleteBodyMeasurementEntry(db, id) {
   return await db.runAsync("DELETE FROM body_measurements WHERE id = ?", [id]);
 }
 
+/**
+ *
+ * @param {*} db
+ * @param {int} id
+ * @param {float} neck
+ * @param {float} waist
+ * @param {float} hip
+ * @param {Date} date
+ * @returns
+ */
 export async function updateBodyMeasurementEntry(
   db,
   id,

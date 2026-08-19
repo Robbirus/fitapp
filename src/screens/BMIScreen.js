@@ -22,7 +22,7 @@ export default function BMIScreen({ navigation }) {
   const loadBMIParameters = async () => {
     const latestWeight = await loadLatestWeight(db);
     const profileSettings = await loadProfileSettings(db);
-    setMass([latestWeight, profileSettings]);
+    setMass([latestWeight?.value, profileSettings]);
   };
 
   if (!mass[0]) {

@@ -19,6 +19,12 @@ import {
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 
+const ETHNICITY_OPTIONS = [
+  { value: "caucasian", label: "Caucasien" },
+  { value: "afro-american", label: "Afro-Américain" },
+  { value: "asian", label: "Asiatique" },
+];
+
 const ACTIVITY_OPTIONS = [
   { value: "sedentary", label: "Sédentaire" },
   { value: "light", label: "Léger" },
@@ -44,6 +50,7 @@ export default function ProfileScreen({ navigation }) {
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState(1);
+  const [ethnicity, setEthnicity] = useState("caucasian");
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [weightGoal, setWeightGoal] = useState("maintain");
   const [weightGoalRate, setWeightGoalRate] = useState(0.5);
@@ -61,12 +68,13 @@ export default function ProfileScreen({ navigation }) {
     setHeight(p.height.toString());
     setAge(p.age.toString());
     setGender(p.gender);
+    setEthnicity(p.ethnicity);
     setActivityLevel(p.activity_level);
     setWeightGoal(p.weight_goal);
     setWeightGoalRate(p.weight_goal_rate);
 
     const w = await loadLatestWeight(db);
-    setLatestWeight(w);
+    setLatestWeight(w?.value || null);
   };
 
   const save = async () => {
@@ -82,6 +90,7 @@ export default function ProfileScreen({ navigation }) {
       height: parseFloat(height),
       age: parseInt(age),
       gender,
+      ethnicity,
       activityLevel,
       weightGoal,
       weightGoalRate: weightGoal === "maintain" ? 0 : weightGoalRate,
@@ -150,6 +159,30 @@ export default function ProfileScreen({ navigation }) {
             <Text
               style={
                 gender === opt.value
+                  ? globalStyles.optionTextSelected
+                  : globalStyles.optionText
+              }
+            >
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={globalStyles.label}>Ethnie :</Text>
+      <View style={globalStyles.optionsRow}>
+        {ETHNICITY_OPTIONS.map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[
+              globalStyles.option,
+              ethnicity === opt.value && globalStyles.optionSelected,
+            ]}
+            onPress={() => setEthnicity(opt.value)}
+          >
+            <Text
+              style={
+                ethnicity === opt.value
                   ? globalStyles.optionTextSelected
                   : globalStyles.optionText
               }
