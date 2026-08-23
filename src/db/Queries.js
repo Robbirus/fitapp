@@ -6,18 +6,31 @@ export async function loadDiaryEntries(db, date) {
   );
 }
 
-export async function addDiaryEntry(db, entry, date) {
+export async function loadRecentFoods(db, limit = 15) {
+  return await db.getAllAsync(
+    `SELECT name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, MAX(id) as last_id
+     FROM diary_entries
+     GROUP BY name
+     ORDER BY last_id DESC
+     LIMIT ?`,
+    [limit],
+  );
+}
+
+export async function addDiaryEntry(db, entry, date, mealType) {
   return await db.runAsync(
-    `INSERT INTO diary_entries (name, calories_100g, protein_100g, carbs_100g, fat_100g, quantity_g, date)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO diary_entries (name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g, date, meal_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.name,
       entry.calories100g,
       entry.protein100g,
       entry.carbs100g,
       entry.fat100g,
+      entry.fiber100g,
       entry.quantityG,
       date,
+      mealType,
     ],
   );
 }
@@ -29,7 +42,7 @@ export async function deleteDiaryEntry(db, id) {
 export async function updateDiaryEntry(db, id, entry) {
   return await db.runAsync(
     `UPDATE diary_entries
-     SET name = ?, calories_100g = ?, protein_100g = ?, carbs_100g = ?, fat_100g = ?, quantity_g = ?
+     SET name = ?, calories_100g = ?, protein_100g = ?, carbs_100g = ?, fat_100g = ?, fiber_100g = ?, quantity_g = ?
      WHERE id = ?`,
     [
       entry.name,
@@ -37,6 +50,7 @@ export async function updateDiaryEntry(db, id, entry) {
       entry.protein100g,
       entry.carbs100g,
       entry.fat100g,
+      entry.fiber100g,
       entry.quantityG,
       id,
     ],
@@ -138,12 +152,13 @@ export async function loadSettings(db) {
 
 export async function updateSettings(db, settings) {
   return await db.runAsync(
-    "UPDATE settings SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ? WHERE id = 1",
+    "UPDATE settings SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ?, fiber_goal = ? WHERE id = 1",
     [
       settings.calorieGoal,
       settings.proteinGoal,
       settings.carbsGoal,
       settings.fatGoal,
+      settings.fiberGoal,
     ],
   );
 }

@@ -56,8 +56,6 @@ export default function BodyFatScreen({ navigation }) {
   const db = useDatabase();
   const [history, setHistory] = useState([]);
   const [period, setPeriod] = useState("week"); // default period
-  const [expandedId, setExpandedId] = useState(null);
-  const [editingId, setEditingId] = useState(null);
   const [waist, setWaist] = useState(null);
   const [hip, setHip] = useState(null);
   const [neck, setNeck] = useState(null);
@@ -68,26 +66,12 @@ export default function BodyFatScreen({ navigation }) {
   const [age, setAge] = useState(null);
   const [ethnicity, setEthnicity] = useState(null);
 
-  const today = getTodayISO();
-
   useFocusEffect(
     useCallback(() => {
       loadHistory(period);
       loadBodyFatparameters();
     }, [period]),
   );
-
-  const toggleExpand = (id) => {
-    if (expandedId === id) {
-      setExpandedId(null);
-      setEditingId(null); // reset edit mode
-      setEditNeck(""); // reset value
-      setEditWaist(""); // reset value
-      setEditHip(""); // reset value
-    } else {
-      setExpandedId(id);
-    }
-  };
 
   const confirmDelete = (id) => {
     Alert.alert(
@@ -119,25 +103,6 @@ export default function BodyFatScreen({ navigation }) {
     const sinceDate = getDateNDaysAgoISO(days);
     const rows = await loadBodyMeasurementHistorySince(db, sinceDate);
     setHistory(rows);
-  };
-
-  const saveEdit = async () => {
-    const item = history.find((f) => f.id === editingId);
-    if (!item) return;
-    try {
-      await updateBodyMeasurementEntry(
-        db,
-        editingId,
-        parseFloat(editNeck),
-        parseFloat(editWaist),
-        parseFloat(editHip),
-        item.date,
-      );
-    } catch (error) {
-      console.log(error);
-    }
-    setEditingId(null);
-    loadHistory(period);
   };
 
   const loadBodyFatparameters = async () => {
@@ -173,7 +138,7 @@ export default function BodyFatScreen({ navigation }) {
     return (
       <View style={globalStyles.container}>
         <Text>
-          Ajoute tes mesures corporelles et ton profil pour voir ce résultat.
+          Ajoute tes mesures corporelles et ton profile pour voir ce résultat.
         </Text>
       </View>
     );
@@ -192,8 +157,6 @@ export default function BodyFatScreen({ navigation }) {
   }
 
   const isStale = daysOld !== null && daysOld > 3;
-
-  console.log(daysOld);
 
   const smm = calculateSkeletalMuscleMass({
     weight,

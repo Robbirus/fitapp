@@ -41,6 +41,7 @@ export default function WHRScreen({ navigation }) {
     setHip(latestMeasurement?.hip || null);
     setGender(profile?.gender || null);
     setHeight(profile?.height || null);
+    setMeasurementDate(latestMeasurement?.date || null);
   };
 
   const whr = calculateWaistHipRatio(waist, hip);

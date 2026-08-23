@@ -3,7 +3,6 @@ import {
   Text,
   View,
   TextInput,
-  Button,
   ScrollView,
   TouchableOpacity,
   FlatList,
@@ -78,37 +77,83 @@ export default function MeasurementScreen({ navigation }) {
   const saveEdit = async () => {
     const item = history.find((f) => f.id === editingId);
     if (!item) return;
+
+    const parsedNeck = parseFloat(editNeckValue);
+    const parsedWaist = parseFloat(editWaistValue);
+    const parsedHip = parseFloat(editHipValue);
+
+    if (
+      isNaN(parsedNeck) ||
+      parsedNeck <= 0 ||
+      isNaN(parsedWaist) ||
+      parsedWaist <= 0 ||
+      isNaN(parsedHip) ||
+      parsedHip <= 0
+    ) {
+      Alert.alert(
+        "Valeur invalide",
+        "Toutes les mesures doivent être des nombres supérieurs à 0.",
+      );
+      return;
+    }
+
     try {
       await updateBodyMeasurementEntry(
         db,
         editingId,
-        parseFloat(editNeckValue),
-        parseFloat(editWaistValue),
-        parseFloat(editHipValue),
+        parsedNeck,
+        parsedWaist,
+        parsedHip,
         item.date,
       );
     } catch (error) {
       console.log(error);
+      Alert.alert("Erreur", "Impossible de modifier ces mesures.");
     }
     setEditingId(null);
     loadLatestMeasurement();
   };
 
   const saveMeasurement = async () => {
+    const parsedNeck = parseFloat(neck);
+    const parsedWaist = parseFloat(waist);
+    const parsedHip = parseFloat(hip);
+
+    if (isNaN(parsedNeck) || parsedNeck <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Le tour de cou doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+    if (isNaN(parsedWaist) || parsedWaist <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Le tour de taille doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+    if (isNaN(parsedHip) || parsedHip <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Le tour de hanches doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
     const today = getTodayISO();
     try {
       await addBodyMeasurementEntry(
         db,
-        parseFloat(neck),
-        parseFloat(waist),
-        parseFloat(hip),
+        parsedNeck,
+        parsedWaist,
+        parsedHip,
         today,
       );
-
-      console.log("Measurement saved successfully.");
       loadLatestMeasurement();
     } catch (error) {
       console.error("Error saving measurement:", error);
+      Alert.alert("Erreur", "Impossible d'enregistrer ces mesures.");
     }
   };
 
@@ -172,43 +217,51 @@ export default function MeasurementScreen({ navigation }) {
   const generateHeader = useMemo(() => {
     return (
       <>
-        <Text style={globalStyles.label}>Tour de cou (cm) :</Text>
-        <TextInput
-          style={globalStyles.input}
-          keyboardType="numeric"
-          value={neck}
-          onChangeText={setNeck}
-        />
-        <Text style={globalStyles.label}>Tour de taille (cm) :</Text>
-        <TextInput
-          style={globalStyles.input}
-          keyboardType="numeric"
-          value={waist}
-          onChangeText={setWaist}
-        />
-        <Text style={globalStyles.label}>Tour de hanches (cm) :</Text>
-        <TextInput
-          style={globalStyles.input}
-          keyboardType="numeric"
-          value={hip}
-          onChangeText={setHip}
-        />
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          activeOpacity={0.6}
-          onPress={saveMeasurement}
-        >
-          <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
-        </TouchableOpacity>
+        <View style={[globalStyles.card, { marginBottom: 16 }]}>
+          <Text style={globalStyles.sectionTitle}>Ajouter une mesure</Text>
+
+          <Text style={globalStyles.label}>Tour de cou (cm) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            keyboardType="numeric"
+            value={neck}
+            onChangeText={setNeck}
+          />
+          <Text style={globalStyles.label}>Tour de taille (cm) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            keyboardType="numeric"
+            value={waist}
+            onChangeText={setWaist}
+          />
+          <Text style={globalStyles.label}>Tour de hanches (cm) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            keyboardType="numeric"
+            value={hip}
+            onChangeText={setHip}
+          />
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            activeOpacity={0.6}
+            onPress={saveMeasurement}
+          >
+            <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
+          </TouchableOpacity>
+        </View>
 
         {history.length === 0 ? (
-          <Text>
-            Ajoute au moins une entrée de mesures corporelles pour voir ton
-            graphique.
-          </Text>
+          <View style={[globalStyles.card, { marginBottom: 16 }]}>
+            <Text>
+              Ajoute au moins une entrée de mesures corporelles pour voir ton
+              graphique.
+            </Text>
+          </View>
         ) : (
-          <>
-            <View style={globalStyles.optionsRow}>
+          <View style={[globalStyles.card, { marginBottom: 16 }]}>
+            <Text style={globalStyles.sectionTitle}>Évolution</Text>
+
+            <View style={[globalStyles.optionsRow, { marginTop: 8 }]}>
               {PERIOD_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
@@ -230,14 +283,15 @@ export default function MeasurementScreen({ navigation }) {
                 </TouchableOpacity>
               ))}
             </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={true}
-              style={{ height: 240 }}
+              style={{ height: 240, marginTop: 12 }}
             >
               <LineChart
                 data={chartData}
-                width={Math.max(screenWidth - 40, recentHistory.length * 40)} // dynamic width based on number of points
+                width={Math.max(screenWidth - 40, recentHistory.length * 40)}
                 height={220}
                 chartConfig={{
                   backgroundColor: "#ffffff",
@@ -250,6 +304,7 @@ export default function MeasurementScreen({ navigation }) {
                 bezier
               />
             </ScrollView>
+
             <View style={globalStyles.legendRow}>
               <View
                 style={[
@@ -277,7 +332,11 @@ export default function MeasurementScreen({ navigation }) {
               />
               <Text>Tour de hanches</Text>
             </View>
-          </>
+          </View>
+        )}
+
+        {history.length > 0 && (
+          <Text style={globalStyles.sectionTitle}>Historique</Text>
         )}
       </>
     );

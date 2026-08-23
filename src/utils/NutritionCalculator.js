@@ -55,7 +55,18 @@ export function calculateGoals({
   const remainingKcal = calorieGoal - proteinGoal * 4 - fatGoal * 9;
   const carbsGoal = Math.round(remainingKcal / 4);
 
-  return { calorieGoal, proteinGoal, carbsGoal, fatGoal };
+  let fiberGoal = 30;
+  if (age && gender) {
+    if (gender === 1) {
+      // Male
+      fiberGoal = age >= 50 ? 30 : 38;
+    } else {
+      // Female
+      fiberGoal = age >= 50 ? 21 : 25;
+    }
+  }
+
+  return { calorieGoal, proteinGoal, carbsGoal, fatGoal, fiberGoal };
 }
 
 export function calculateProjectedWeight({

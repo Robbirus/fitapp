@@ -107,9 +107,10 @@ export default function ProfileScreen({ navigation }) {
       proteinGoal: goals.proteinGoal,
       carbsGoal: goals.carbsGoal,
       fatGoal: goals.fatGoal,
+      fiberGoal: goals.fiberGoal,
     });
 
-    alert("Profil et objectifs mis à jour !");
+    alert("Information et objectifs mis à jour !");
     loadData();
   };
 
@@ -117,7 +118,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>Votre profil</Text>
+      <Text style={globalStyles.titre}>Vos informations</Text>
 
       <Text style={globalStyles.label}>Nom :</Text>
       <TextInput

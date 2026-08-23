@@ -4,9 +4,8 @@ import {
   Text,
   View,
   TextInput,
-  Button,
+  TouchableOpacity,
   ScrollView,
-  Dimensions,
 } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { useDatabase } from "../db/DatabaseContext";
@@ -17,7 +16,11 @@ import {
   updateSettings,
   loadCaloriesPerDay,
 } from "../db/Queries";
-import { getTodayISO, getDateNDaysAgoISO } from "../utils/DateHelpers";
+import {
+  getTodayISO,
+  getDateNDaysAgoISO,
+  formatFullDateFR,
+} from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 import DonutRing from "../components/DonutRing";
 import Bar from "../components/Bar";
@@ -36,7 +39,8 @@ export default function DashboardScreen() {
   const [carbsInput, setCarbsInput] = useState("");
   const [fatInput, setFatInput] = useState("");
   const [weekCalories, setWeekCalories] = useState([]);
-  const screenWidth = Dimensions.get("window").width;
+  const [fiberConsumed, setFiberConsumed] = useState(0);
+  const [fiberInput, setFiberInput] = useState("");
 
   const today = getTodayISO();
 
@@ -54,7 +58,6 @@ export default function DashboardScreen() {
     return `${value}`;
   };
 
-  const chartLabels = last7Days.map((date) => date.slice(5)); // "MM-DD"
   const barData = last7Days.map((date) => {
     const found = weekCalories.find((d) => d.date === date);
     const value = found ? Math.round(found.total_calories) : 0;
@@ -66,6 +69,7 @@ export default function DashboardScreen() {
       ),
     };
   });
+
   const loadData = async () => {
     const s = await loadSettings(db);
     const since = getDateNDaysAgoISO(6); // 6 days back + today = 7 days
@@ -76,6 +80,7 @@ export default function DashboardScreen() {
     setProteinInput(s.protein_goal.toString());
     setCarbsInput(s.carbs_goal.toString());
     setFatInput(s.fat_goal.toString());
+    setFiberInput(s.fiber_goal.toString());
 
     const foods = await loadDiaryEntries(db, today);
     const totalConsumed = foods.reduce(
@@ -102,6 +107,12 @@ export default function DashboardScreen() {
     );
     setFat(Math.round(totalFat));
 
+    const totalFiber = foods.reduce(
+      (sum, item) => sum + ((item.fiber_100g || 0) * item.quantity_g) / 100,
+      0,
+    );
+    setFiberConsumed(Math.round(totalFiber * 10) / 10);
+
     const activities = await loadActivities(db, today);
     const totalBurned = activities.reduce(
       (somme, item) => somme + item.calories_burned,
@@ -117,6 +128,7 @@ export default function DashboardScreen() {
       proteinGoal: parseFloat(proteinInput),
       carbsGoal: parseFloat(carbsInput),
       fatGoal: parseFloat(fatInput),
+      fiberGoal: parseFloat(fiberInput),
     });
     setEditing(false);
     loadData();
@@ -125,142 +137,166 @@ export default function DashboardScreen() {
   if (!settings) return null; // nothing to display until the settings are loaded
 
   const calRemaining = settings.calorie_goal - calConsumed + calBurned;
-  const calProgress = Math.min(calConsumed / settings.calorie_goal, 1); // between 0 and 1, capped at 1
-
-  const proteinRemaining = settings.protein_goal - proteinConsumed;
-  const proteinProgress = Math.min(proteinConsumed / settings.protein_goal, 1); // between 0 and 1, capped at 1
-
-  const carbsRemaining = settings.carbs_goal - carbsConsumed;
-  const carbsProgress = Math.min(carbsConsumed / settings.carbs_goal, 1); // between 0 and 1, capped at 1
-
-  const fatRemaining = settings.fat_goal - fatConsumed;
-  const fatProgress = Math.min(fatConsumed / settings.fat_goal, 1); // between 0 and 1, capped at 1
-
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
       <Text style={globalStyles.titre}>Aujourd'hui</Text>
+      <Text
+        style={[
+          globalStyles.sectionSubtitle,
+          { textAlign: "center", marginBottom: 16 },
+        ]}
+      >
+        {formatFullDateFR(today)}
+      </Text>
 
       {editing ? (
-        <View style={globalStyles.editBox}>
-          <Text style={globalStyles.label}>Objectif calorique quotidien :</Text>
+        <View style={[globalStyles.card, { marginBottom: 16 }]}>
+          <Text style={globalStyles.sectionTitle}>Objectifs quotidiens</Text>
+
+          <Text style={globalStyles.label}>Calories (kcal) :</Text>
           <TextInput
             style={globalStyles.input}
             value={goalInput}
             onChangeText={setGoalInput}
             keyboardType="numeric"
           />
-          <Text style={globalStyles.label}>
-            Objectif de protéines quotidien :
-          </Text>
+          <Text style={globalStyles.label}>Protéines (g) :</Text>
           <TextInput
             style={globalStyles.input}
             value={proteinInput}
             onChangeText={setProteinInput}
             keyboardType="numeric"
           />
-          <Text style={globalStyles.label}>
-            Objectif de glucides quotidien :
-          </Text>
+          <Text style={globalStyles.label}>Glucides (g) :</Text>
           <TextInput
             style={globalStyles.input}
             value={carbsInput}
             onChangeText={setCarbsInput}
             keyboardType="numeric"
           />
-          <Text style={globalStyles.label}>
-            Objectif de lipides quotidien :
-          </Text>
+          <Text style={globalStyles.label}>Lipides (g) :</Text>
           <TextInput
             style={globalStyles.input}
             value={fatInput}
             onChangeText={setFatInput}
             keyboardType="numeric"
           />
-          <Button title="Enregistrer" onPress={saveGoal} />
+          <Text style={globalStyles.label}>Fibres (g) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={fiberInput}
+            onChangeText={setFiberInput}
+            keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            activeOpacity={0.6}
+            onPress={saveGoal}
+          >
+            <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
+          </TouchableOpacity>
         </View>
       ) : (
-        <View style={globalStyles.goalRow}>
-          <Button title="Modifier" onPress={() => setEditing(true)} />
+        <View style={[globalStyles.card, { marginBottom: 16 }]}>
+          <Text style={globalStyles.sectionTitle}>Résumé du jour</Text>
+          <Text style={[globalStyles.sectionSubtitle, { marginBottom: 12 }]}>
+            Objectif : {settings.calorie_goal} kcal
+          </Text>
+
+          <View style={{ alignItems: "center", marginVertical: 10 }}>
+            <DonutRing
+              progress={Math.min(calConsumed / settings.calorie_goal, 1)}
+              centerValue={calRemaining}
+              textValue="Kcal restantes"
+            />
+          </View>
+
+          <View style={globalStyles.statsRow}>
+            <View style={globalStyles.statBox}>
+              <Text style={globalStyles.statValue}>{calConsumed}</Text>
+              <Text style={globalStyles.statLabel}>Consommé</Text>
+            </View>
+            <View style={globalStyles.statBox}>
+              <Text style={globalStyles.statValue}>{calBurned}</Text>
+              <Text style={globalStyles.statLabel}>Brûlé</Text>
+            </View>
+            <View style={globalStyles.statBox}>
+              <Text style={globalStyles.statValue}>{calRemaining}</Text>
+              <Text style={globalStyles.statLabel}>Restant</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { marginTop: 16 }]}
+            activeOpacity={0.6}
+            onPress={() => setEditing(true)}
+          >
+            <Text style={globalStyles.primaryButtonText}>
+              Modifier mes objectifs
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
-      <View style={globalStyles.goalRow}>
-        <Text style={globalStyles.goalText}>
-          Objectif : {settings.calorie_goal} kcal
-        </Text>
-      </View>
-      <View style={{ alignItems: "center", marginVertical: 20 }}>
-        <DonutRing
-          progress={Math.min(calConsumed / settings.calorie_goal, 1)}
-          centerValue={settings.calorie_goal - calConsumed + calBurned}
-          textValue="Kcal restantes"
-        />
+
+      <View style={[globalStyles.card, { marginBottom: 16 }]}>
+        <Text style={globalStyles.sectionTitle}>Macronutriments</Text>
+        <View style={{ marginTop: 8 }}>
+          <Bar
+            label="Protéines"
+            consumed={proteinConsumed}
+            goal={settings.protein_goal}
+            color="#EF5350"
+            unit="g"
+          />
+          <Bar
+            label="Glucides"
+            consumed={carbsConsumed}
+            goal={settings.carbs_goal}
+            color="#FFA726"
+            unit="g"
+          />
+          <Bar
+            label="Lipides"
+            consumed={fatConsumed}
+            goal={settings.fat_goal}
+            color="#42A5F5"
+            unit="g"
+          />
+          <Bar
+            label="Fibres"
+            consumed={fiberConsumed}
+            goal={settings?.fiber_goal}
+            color="#8D6E63"
+            unit="g"
+          />
+        </View>
       </View>
 
-      <View style={globalStyles.statsRow}>
-        <View style={globalStyles.statBox}>
-          <Text style={globalStyles.statValue}>{calConsumed}</Text>
-          <Text style={globalStyles.statLabel}>Consommé</Text>
+      <View style={globalStyles.card}>
+        <Text style={globalStyles.sectionTitle}>7 derniers jours</Text>
+        <View style={{ marginTop: 12, alignItems: "center" }}>
+          <BarChart
+            data={barData}
+            width={280}
+            height={200}
+            topLabelContainerStyle={{ paddingBottom: 4 }}
+            barWidth={22}
+            initialSpacing={10}
+            spacing={18}
+            barBorderRadius={4}
+            frontColor="#4CAF50"
+            showReferenceLine1
+            maxValue={settings.calorie_goal * 1.1}
+            referenceLine1Position={settings.calorie_goal}
+            referenceLine1Config={{
+              color: "#FF5722",
+              dashWidth: 6,
+              dashGap: 4,
+              thickness: 2,
+            }}
+          />
         </View>
-        <View style={globalStyles.statBox}>
-          <Text style={globalStyles.statValue}>{calBurned}</Text>
-          <Text style={globalStyles.statLabel}>Brûlé</Text>
-        </View>
-        <View style={globalStyles.statBox}>
-          <Text style={globalStyles.statValue}>{calRemaining}</Text>
-          <Text style={globalStyles.statLabel}>Restant</Text>
-        </View>
-      </View>
-
-      <View>
-        <Bar
-          label="Protéines"
-          consumed={proteinConsumed}
-          goal={settings.protein_goal}
-          color="#EF5350"
-          unit="g"
-        />
-        <Bar
-          label="Glucides"
-          consumed={carbsConsumed}
-          goal={settings.carbs_goal}
-          color="#FFA726"
-          unit="g"
-        />
-        <Bar
-          label="Lipides"
-          consumed={fatConsumed}
-          goal={settings.fat_goal}
-          color="#42A5F5"
-          unit="g"
-        />
-      </View>
-
-      <View
-        style={{
-          marginTop: 30,
-        }}
-      >
-        <BarChart
-          data={barData}
-          width={280}
-          height={200}
-          topLabelContainerStyle={{ paddingBottom: 4 }}
-          barWidth={22}
-          initialSpacing={10}
-          spacing={18}
-          barBorderRadius={4}
-          frontColor="#4CAF50"
-          // The goal line is added in 4 simple lines:
-          showReferenceLine1
-          maxValue={settings.calorie_goal * 1.1}
-          referenceLine1Position={settings.calorie_goal}
-          referenceLine1Config={{
-            color: "#FF5722",
-            dashWidth: 6,
-            dashGap: 4,
-            thickness: 2,
-          }}
-        />
       </View>
     </ScrollView>
   );

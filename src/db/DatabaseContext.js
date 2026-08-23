@@ -20,8 +20,10 @@ export function DatabaseProvider({ children }) {
         protein_100g REAL DEFAULT 0,
         carbs_100g REAL DEFAULT 0,
         fat_100g REAL DEFAULT 0,
+        fiber_100g REAL DEFAULT 0,
         quantity_g REAL NOT NULL,
-        date TEXT NOT NULL
+        date TEXT NOT NULL,
+        meal_type TEXT NOT NULL DEFAULT 'Snack'
       );
 
       CREATE TABLE IF NOT EXISTS weight_entries (
@@ -59,7 +61,8 @@ export function DatabaseProvider({ children }) {
         calorie_goal REAL NOT NULL DEFAULT 2000,
         protein_goal REAL NOT NULL DEFAULT 120,
         carbs_goal REAL NOT NULL DEFAULT 250,
-        fat_goal REAL NOT NULL DEFAULT 65
+        fat_goal REAL NOT NULL DEFAULT 65,
+        fiber_goal REAL NOT NULL DEFAULT  25
       );
 
       INSERT OR IGNORE INTO settings (id) VALUES (1);

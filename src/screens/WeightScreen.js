@@ -15,16 +15,12 @@ import {
   Text,
   View,
   TextInput,
-  Button,
   FlatList,
   ScrollView,
   TouchableOpacity,
   Alert,
 } from "react-native";
-import {
-  calculateWeightGoal,
-  calculateProjectedWeight,
-} from "../utils/NutritionCalculator";
+import { calculateProjectedWeight } from "../utils/NutritionCalculator";
 import { globalStyles } from "../styles/GlobalStyles";
 
 const screenWidth = Dimensions.get("window").width;
@@ -76,24 +72,45 @@ export default function WeightScreen({ navigation }) {
   };
 
   const saveWeight = async () => {
-    if (weight === "") return;
+    const parsedWeight = parseFloat(weight);
+
+    if (isNaN(parsedWeight) || parsedWeight <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Le poids doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
     const today = getTodayISO();
     try {
-      await addWeightEntry(db, parseFloat(weight), today);
+      await addWeightEntry(db, parsedWeight, today);
       setWeight("");
-      loadHistory(period); // reload the history after adding a new entry
+      loadHistory(period);
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'entrée de poids :", error);
+      Alert.alert("Erreur", "Impossible d'enregistrer ce poids.");
     }
   };
 
   const saveEdit = async () => {
     const item = history.find((f) => f.id === editingId);
     if (!item) return;
+
+    const parsedValue = parseFloat(editValue);
+    if (isNaN(parsedValue) || parsedValue <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Le poids doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
     try {
-      await updateWeightEntry(db, editingId, parseFloat(editValue), item.date);
+      await updateWeightEntry(db, editingId, parsedValue, item.date);
     } catch (error) {
       console.log(error);
+      Alert.alert("Erreur", "Impossible de modifier ce poids.");
     }
     setEditingId(null);
     loadHistory(period);
@@ -152,30 +169,37 @@ export default function WeightScreen({ navigation }) {
   const generateHeader = useMemo(() => {
     return (
       <>
-        <Text style={globalStyles.label}>Ton poids aujourd'hui (kg) :</Text>
-        <TextInput
-          style={globalStyles.input}
-          value={weight}
-          onChangeText={setWeight}
-          keyboardType="numeric"
-          placeholder="ex: 75.5"
-        />
+        <View style={[globalStyles.card, { marginBottom: 16 }]}>
+          <Text style={globalStyles.sectionTitle}>Ajouter un poids</Text>
+          <Text style={globalStyles.label}>Ton poids aujourd'hui (kg) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="numeric"
+            placeholder="ex: 75.5"
+          />
 
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          activeOpacity={0.6}
-          onPress={saveWeight}
-        >
-          <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            activeOpacity={0.6}
+            onPress={saveWeight}
+          >
+            <Text style={globalStyles.primaryButtonText}>Enregistrer</Text>
+          </TouchableOpacity>
+        </View>
 
         {history.length === 0 ? (
-          <Text>
-            Ajoute au moins une entrée de poids pour voir ton graphique.
-          </Text>
+          <View style={[globalStyles.card, { marginBottom: 16 }]}>
+            <Text>
+              Ajoute au moins une entrée de poids pour voir ton graphique.
+            </Text>
+          </View>
         ) : (
-          <>
-            <View style={globalStyles.optionsRow}>
+          <View style={[globalStyles.card, { marginBottom: 16 }]}>
+            <Text style={globalStyles.sectionTitle}>Évolution</Text>
+
+            <View style={[globalStyles.optionsRow, { marginTop: 8 }]}>
               {PERIOD_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
@@ -197,14 +221,15 @@ export default function WeightScreen({ navigation }) {
                 </TouchableOpacity>
               ))}
             </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={true}
-              style={{ height: 240 }}
+              style={{ height: 240, marginTop: 12 }}
             >
               <LineChart
                 data={chartData}
-                width={Math.max(screenWidth - 40, recentHistory.length * 40)} // dynamic width based on number of points
+                width={Math.max(screenWidth - 40, recentHistory.length * 40)}
                 height={220}
                 chartConfig={{
                   backgroundColor: "#ffffff",
@@ -217,6 +242,7 @@ export default function WeightScreen({ navigation }) {
                 bezier
               />
             </ScrollView>
+
             <View style={globalStyles.legendRow}>
               <View
                 style={[
@@ -237,7 +263,11 @@ export default function WeightScreen({ navigation }) {
                 </>
               )}
             </View>
-          </>
+          </View>
+        )}
+
+        {history.length > 0 && (
+          <Text style={globalStyles.sectionTitle}>Historique</Text>
         )}
       </>
     );

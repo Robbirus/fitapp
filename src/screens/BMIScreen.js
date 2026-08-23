@@ -2,14 +2,13 @@ import { useDatabase } from "../db/DatabaseContext";
 import { loadLatestWeight, loadProfileSettings } from "../db/Queries";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { Text, View, Button, FlatList, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity } from "react-native";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 
 export default function BMIScreen({ navigation }) {
   const db = useDatabase();
   const [mass, setMass] = useState([]);
-  const [expandedId, setExpandedId] = useState(null);
 
   const today = getTodayISO();
 
@@ -29,7 +28,7 @@ export default function BMIScreen({ navigation }) {
     return (
       <View style={globalStyles.container}>
         <Text>
-          Ajoute au moins une entrée de poids et les paramètres du profil pour
+          Ajoute au moins une entrée de poids et les paramètres du profile pour
           voir ton IMC.
         </Text>
       </View>
@@ -54,17 +53,22 @@ export default function BMIScreen({ navigation }) {
 
   return (
     <View style={globalStyles.container}>
-      <Text style={globalStyles.title}>Calculateur d'IMC</Text>
+      <Text style={globalStyles.titre}>Calculateur d'IMC</Text>
       <Text style={globalStyles.label}>Poids actuel : {mass[0]} kg</Text>
       <Text style={globalStyles.label}>Taille : {mass[1]?.height} cm</Text>
       <Text style={globalStyles.label}>IMC : {bmi}</Text>
       <Text style={globalStyles.label}>
         Catégorie : {obtainBMICategory(bmi)}
       </Text>
-      <Button
-        title="Modifier les paramètres du profile"
+      <TouchableOpacity
+        style={globalStyles.primaryButton}
+        activeOpacity={0.6}
         onPress={() => navigation.navigate("Votre Profile")}
-      />
+      >
+        <Text style={globalStyles.primaryButtonText}>
+          Modifier les paramètres du profile
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
