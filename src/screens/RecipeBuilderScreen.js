@@ -22,6 +22,7 @@ import {
   computeWeightedScore,
   getScoreBand,
 } from "../utils/FoodScore";
+import ScoreBadge from "../components/ScoreBadge";
 
 export default function RecipeBuilderScreen({ navigation, route }) {
   const db = useDatabase();
@@ -545,15 +546,20 @@ export default function RecipeBuilderScreen({ navigation, route }) {
       })}
 
       {ingredients.length > 0 && (
-        <View style={[globalStyles.infoBanner, { marginTop: 4 }]}>
+        <View style={[globalStyles.infoBanner, { marginTop: 4, alignItems: "center" }]}>
           <Text style={globalStyles.infoText}>
-            Total recette : {Math.round(totalWeight)} g ·{" "}
-            {Math.round(totalCalories)} kcal
+            Total recette : {Math.round(totalWeight)} g · {Math.round(totalCalories)} kcal
           </Text>
+          
           {recipeScore !== null && (
-            <Text style={[globalStyles.infoText, { marginTop: 4 }]}>
-              Score de la recette : {Math.round(recipeScore)}/100 ({recipeScoreBand.label})
-            </Text>
+            <View style={{ marginTop: 8 }}>
+              <ScoreBadge 
+                scoreResult={{
+                  score: recipeScore,
+                  scoreType: "recipe",
+                }}
+              />
+            </View>
           )}
         </View>
       )}

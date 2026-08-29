@@ -106,6 +106,17 @@ export function DatabaseProvider({ children }) {
             is_organic INTEGER,
             origin_category TEXT
           );
+
+          CREATE TABLE IF NOT EXISTS achievements (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL, -- 'streak', 'nutrition', 'weight'
+            target_value REAL NOT NULL,
+            current_value REAL DEFAULT 0,
+            is_unlocked INTEGER DEFAULT 0,
+            unlocked_at TEXT
+          );
         `);
 
         // Migration pour les installations déjà existantes

@@ -24,6 +24,7 @@ import {
   computeScoreFromMacros,
   getScoreBand,
 } from "../utils/FoodScore";
+import ScoreBadge from "../components/ScoreBadge";
 
 export default function ScannerScreen({ navigation }) {
   const db = useDatabase();
@@ -448,22 +449,15 @@ export default function ScannerScreen({ navigation }) {
     return (
       <ScrollView>
         <View style={globalStyles.center}>
-          <View
-            style={{
-              backgroundColor: scoreBand.color,
-              borderRadius: 8,
-              paddingVertical: 6,
-              paddingHorizontal: 14,
-              alignSelf: "center",
-              marginBottom: 10,
+          <ScoreBadge 
+            scoreResult={currentScore}
+            macros={{
+              calories100g: parseFloat(calories100g) || 0,
+              protein100g: parseFloat(protein100g) || 0,
+              fiber100g: parseFloat(fiber100g) || 0,
+              fat100g: parseFloat(fat100g) || 0,
             }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>
-              {scoreBand.label} · {Math.round(currentScore.score)}/100
-              {currentScore.scoreType === "estimate" ? " (estimation)" : ""}
-            </Text>
-          </View>
-
+          />
           <Text style={globalStyles.label}>Repas :</Text>
           <View style={globalStyles.optionsRow}>
             {MEAL_PERIOD.map((opt) => (

@@ -22,6 +22,7 @@ import {
   guessMealFromTimes,
 } from "../utils/MealHelpers";
 import { computeWeightedScore, getScoreBand } from "../utils/FoodScore";
+import ScoreBadge from "../components/ScoreBadge";
 
 export default function RecipeLogScreen({ navigation, route }) {
   const db = useDatabase();
@@ -175,22 +176,22 @@ export default function RecipeLogScreen({ navigation, route }) {
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
       <Text style={globalStyles.titre}>{recipeName}</Text>
 
-      {dishScoreBand && (
-        <View
-          style={{
-            backgroundColor: dishScoreBand.color,
-            borderRadius: 8,
-            paddingVertical: 6,
-            paddingHorizontal: 14,
-            alignSelf: "center",
-            marginBottom: 10,
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            {dishScoreBand.label} · {Math.round(dishScore)}/100
-          </Text>
-        </View>
-      )}
+            {dishScore !== null && (
+              <View style={{ alignItems: "center", marginBottom: 12 }}>
+                <ScoreBadge 
+                  scoreResult={{
+                    score: dishScore,
+                    scoreType: "recipe",
+                  }}
+                  macros={{
+                    calories100g: totals.weight > 0 ? (totals.calories / totals.weight) * 100 : 0,
+                    protein100g: totals.weight > 0 ? (totals.protein / totals.weight) * 100 : 0,
+                    fiber100g: totals.weight > 0 ? (totals.fiber / totals.weight) * 100 : 0,
+                    fat100g: totals.weight > 0 ? (totals.fat / totals.weight) * 100 : 0,
+                  }}
+                />
+              </View>
+            )}
 
       <Text style={globalStyles.label}>Repas :</Text>
       <View style={globalStyles.optionsRow}>

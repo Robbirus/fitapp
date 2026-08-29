@@ -5,6 +5,7 @@ import { useDatabase } from "../db/DatabaseContext";
 import { loadRecipes, deleteRecipe } from "../db/Queries";
 import { globalStyles } from "../styles/GlobalStyles";
 import { getScoreBand } from "../utils/FoodScore";
+import ScoreBadge from "../components/ScoreBadge";
 
 export default function RecipesScreen({ navigation }) {
   const db = useDatabase();
@@ -70,77 +71,32 @@ export default function RecipesScreen({ navigation }) {
           const band =
             typeof recipe.score === "number" ? getScoreBand(recipe.score) : null;
           return (
-          <View
-            key={recipe.id}
-            style={[globalStyles.card, { marginBottom: 12 }]}
-          >
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("RecipeLog", { recipeId: recipe.id })
-              }
-            >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text style={globalStyles.sectionTitle}>{recipe.name}</Text>
-                {band && (
-                  <View style={{ backgroundColor: band.color, borderRadius: 6, paddingVertical: 2, paddingHorizontal: 8 }}>
-                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
-                      {Math.round(recipe.score)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={globalStyles.sectionSubtitle}>
-                {recipe.ingredient_count} ingrédient
-                {recipe.ingredient_count > 1 ? "s" : ""} ·{" "}
-                {Math.round(recipe.total_calories)} kcal au total
-              </Text>
-            </TouchableOpacity>
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+            <View key={recipe.id} style={[globalStyles.card, { marginBottom: 12 }]}>
               <TouchableOpacity
-                style={[
-                  globalStyles.primaryButton,
-                  { flex: 1, backgroundColor: "#4CAF50", marginVertical: 0 },
-                ]}
                 onPress={() =>
                   navigation.navigate("RecipeLog", { recipeId: recipe.id })
                 }
               >
-                <Text style={globalStyles.primaryButtonText}>
-                  Ajouter au journal
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={globalStyles.sectionTitle}>{recipe.name}</Text>
+                  {typeof recipe.score === "number" && (
+                    <ScoreBadge 
+                      scoreResult={{ 
+                        score: recipe.score, 
+                        scoreType: "recipe" 
+                      }}
+                      compact={true} 
+                    />
+                  )}
+                </View>
+                
+                <Text style={globalStyles.sectionSubtitle}>
+                  {recipe.ingredient_count} ingrédient
+                  {recipe.ingredient_count > 1 ? "s" : ""} ·{" "}
+                  {Math.round(recipe.total_calories)} kcal au total
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  globalStyles.primaryButton,
-                  {
-                    backgroundColor: "#999",
-                    marginVertical: 0,
-                    paddingHorizontal: 14,
-                  },
-                ]}
-                onPress={() =>
-                  navigation.navigate("RecipeBuilder", {
-                    recipeId: recipe.id,
-                  })
-                }
-              >
-                <Text style={globalStyles.primaryButtonText}>Modifier</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  globalStyles.primaryButton,
-                  {
-                    backgroundColor: "#e53935",
-                    marginVertical: 0,
-                    paddingHorizontal: 14,
-                  },
-                ]}
-                onPress={() => confirmDelete(recipe)}
-              >
-                <Text style={globalStyles.primaryButtonText}>Suppr.</Text>
-              </TouchableOpacity>
             </View>
-          </View>
           );
         })}
         {!loading && recipes.length === 0 && (
