@@ -18,6 +18,49 @@ export function obtainWHRCategory(ratio, gender) {
   }
 }
 
+export function calculateBMI(weight, height){
+  if (!weight || !height) return null;
+
+  const heightInMeter = height / 100;
+  return weight / (heightInMeter * heightInMeter)
+}
+
+export function obtainBMICategory(bmi){
+  if(!bmi) return null;
+
+  if(bmi < 18.5) return "Insuffisance pondérale";
+  if(bmi < 25) return "Poids normal";
+  if(bmi < 30) return "Surpoids";
+  else return "Obésité";
+}
+
+export function getBMIZones() {
+  return {
+    min:10,
+    max:40,
+    zones: [            
+      { label: "Insuffisance", color: "#42A5F5", end: 18.5 },
+      { label: "Normal",       color: "#4CAF50", end: 25 },
+      { label: "Surpoids",     color: "#FFA726", end: 30 },
+      { label: "Obésité",      color: "#e53935", end: 40 },
+    ]
+  }
+}
+
+export function getBMIRecommendation(bmiCategory) {
+  if (bmiCategory === "Insuffisance pondérale")
+    return "Ton IMC indique une insuffisance pondérale. Envisage d'augmenter ton apport calorique avec des aliments nutritifs, et parles-en à un professionnel de santé si la perte de poids n'est pas volontaire.";
+  if (bmiCategory === "Poids normal")
+    return "Ton IMC se situe dans la plage normale. Continue tes habitudes actuelles : alimentation équilibrée et activité physique régulière.";
+  if (bmiCategory === "Surpoids")
+    return "Ton IMC indique un surpoids. Une activité physique régulière et une alimentation équilibrée peuvent aider à le réduire progressivement.";
+  else {
+    // "Obésité"
+    return "Ton IMC indique une obésité. Envisage d'en parler à un professionnel de santé pour un accompagnement adapté.";
+  }
+}
+ 
+
 export function getCategoryColors(category) {
   const colorMap = {
     "Risque faible": { bg: "#E3F5E9", text: "#00875A" },
@@ -30,6 +73,8 @@ export function getCategoryColors(category) {
     Sain: { bg: "#E3F5E9", text: "#00875A" },
     Surpoids: { bg: "#FFF3CD", text: "#B45F06" },
     "Risque très élevé": { bg: "#FDE2E1", text: "#C62828" },
+    "Insuffisance pondérale": { bg: "#DCEBFF", text: "#0066FF" },
+    "Obésité":                { bg: "#FDE2E1", text: "#C62828" },
   };
   return colorMap[category] || { bg: "#F2EFEB", text: "#5A524C" };
 }

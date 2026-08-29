@@ -17,6 +17,7 @@ export function calculateGoals({
   activityLevel,
   weightGoal,
   weightGoalRate,
+  dietStyle = "balanced",
 }) {
   // 1. BMR (basal metabolism) - Mifflin-St Jeor formula
   let bmr;
@@ -44,16 +45,55 @@ export function calculateGoals({
 
   const calorieGoal = Math.round(tdee + dailyAdjustment);
 
-  // 4. Macros
-  // Proteins: 1.8g per kg of body weight (good benchmark to preserve muscle, loss or gain)
-  const proteinGoal = Math.round(weight * 1.8);
+  // 4. Macros - the distribution depends on the diet style chosen in the profile
+  // The calculation is always done in 2 steps: we set 2 macros according to the style,
+  // then the 3rd fills in the remaining calories (1g carbohydrates/proteins = 4 kcal, 1g fats = 9 kcal
+  let proteinGoal, fatGoal, carbsGoal;
 
-  // Fat: Based on body weight (e.g., 0.8g/kg) rather than a fixed % level
-  const fatGoal = Math.round(weight * 0.8);
+  switch (dietStyle) {
+    case "keto":
+      // Ketogenic: very low carbohydrates (fixed, independent of weight), moderate proteins
+      // (not too high so as not to break the ketosis via gluconeogenesis), lipids in filling
+      carbsGoal = 25;
+      proteinGoal = Math.round(weight * 1.6);
+      fatGoal = Math.max(
+        0,
+        Math.round((calorieGoal - proteinGoal * 4 - carbsGoal * 4) / 9),
+      );
+      break;
 
-  // Carbs: the remaining calories (1g of carbs = 4 kcal, like proteins)
-  const remainingKcal = calorieGoal - proteinGoal * 4 - fatGoal * 9;
-  const carbsGoal = Math.round(remainingKcal / 4);
+    case "high_protein":
+      // Rich in protein: the protein intake is significantly increased, lipids remain unchanged,
+      // carbohydrates in filling
+      proteinGoal = Math.round(weight * 2.2);
+      fatGoal = Math.round(weight * 0.8);
+      carbsGoal = Math.max(
+        0,
+        Math.round((calorieGoal - proteinGoal * 4 - fatGoal * 9) / 4),
+      );
+      break;
+
+    case "low_carb":
+      // Low in carbohydrates: carbohydrates capped at ~20% of total calories,
+      // proteins identical to the balanced diet, lipids in filling
+      proteinGoal = Math.round(weight * 1.8);
+      carbsGoal = Math.round((calorieGoal * 0.2) / 4);
+      fatGoal = Math.max(
+        0,
+        Math.round((calorieGoal - proteinGoal * 4 - carbsGoal * 4) / 9),
+      );
+      break;
+
+    case "balanced":
+    default:
+      // Balanced: proteins and lipids based on weight, carbohydrates in feed
+      proteinGoal = Math.round(weight * 1.8);
+      fatGoal = Math.round(weight * 0.8);
+      carbsGoal = Math.max(
+        0,
+        Math.round((calorieGoal - proteinGoal * 4 - fatGoal * 9) / 4),
+      );
+  }
 
   let fiberGoal = 30;
   if (age && gender) {

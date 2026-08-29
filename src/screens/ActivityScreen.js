@@ -1,10 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   Text,
   View,
   TextInput,
-  Button,
   FlatList,
   TouchableOpacity,
   Alert,
@@ -46,12 +45,31 @@ export default function ActivityScreen() {
 
   const add = async () => {
     if (name === "" || duration === "") return;
+
+    const parsedDuration = parseFloat(duration);
+    if (isNaN(parsedDuration) || parsedDuration <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "La durée doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
+    const parsedCalories = parseFloat(caloriesBurned);
+    if (caloriesBurned !== "" && (isNaN(parsedCalories) || parsedCalories < 0)) {
+      Alert.alert(
+        "Valeur invalide",
+        "Les calories doivent être un nombre positif.",
+      );
+      return;
+    }
+
     try {
       await addActivityEntry(
         db,
         name,
-        parseFloat(duration),
-        parseFloat(caloriesBurned) || 0,
+        parsedDuration,
+        parsedCalories || 0,
         today,
       );
       setNames("");
@@ -60,6 +78,7 @@ export default function ActivityScreen() {
       fetchActivities();
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'activité :", error);
+      Alert.alert("Erreur", "Impossible d'enregistrer cette activité.");
     }
   };
 
@@ -88,17 +107,37 @@ export default function ActivityScreen() {
   const saveEdit = async () => {
     const item = activities.find((f) => f.id === editingId);
     if (!item) return;
+
+    const parsedDuration = parseFloat(editDurationValue);
+    if (isNaN(parsedDuration) || parsedDuration <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "La durée doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
+    const parsedCalories = parseFloat(editCaloriesValue);
+    if (isNaN(parsedCalories) || parsedCalories < 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Les calories doivent être un nombre positif.",
+      );
+      return;
+    }
+
     try {
       await updateActivityEntry(
         db,
         editingId,
         editNameValue,
-        parseFloat(editDurationValue),
-        parseFloat(editCaloriesValue),
+        parsedDuration,
+        parsedCalories,
         item.date,
       );
     } catch (error) {
       console.log(error);
+      Alert.alert("Erreur", "Impossible de modifier cette activité.");
     }
     setEditingId(null);
     fetchActivities();
@@ -122,120 +161,160 @@ export default function ActivityScreen() {
     );
   };
 
+  const generateHeader = useMemo(() => {
+    return (
+      <>
+        <Text style={globalStyles.subTitle}>Activité du {today}</Text>
+
+        <View style={[globalStyles.card, { marginBottom: 16 }]}>
+          <Text style={globalStyles.sectionTitle}>Ajouter une activité</Text>
+
+          <Text style={globalStyles.label}>Type d'activité :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={name}
+            onChangeText={setNames}
+            placeholder="ex: course"
+          />
+
+          <Text style={globalStyles.label}>Durée (minutes) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={duration}
+            onChangeText={setDuration}
+            placeholder="ex: 30"
+            keyboardType="numeric"
+          />
+
+          <Text style={globalStyles.label}>Calories brûlées (optionnel) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={caloriesBurned}
+            onChangeText={setCaloriesBurned}
+            placeholder="ex: 250"
+            keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            activeOpacity={0.6}
+            onPress={add}
+          >
+            <Text style={globalStyles.primaryButtonText}>Ajouter</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={globalStyles.gridContainer}>
+          <View style={globalStyles.miniCard}>
+            <Text style={globalStyles.miniCardTitle}>Total brûlé</Text>
+            <Text style={globalStyles.miniCardValue}>
+              {totalBurned} <Text style={globalStyles.miniCardUnit}>kcal</Text>
+            </Text>
+          </View>
+          <View style={globalStyles.miniCard}>
+            <Text style={globalStyles.miniCardTitle}>Total activité</Text>
+            <Text style={globalStyles.miniCardValue}>
+              {totalDuration} <Text style={globalStyles.miniCardUnit}>min</Text>
+            </Text>
+          </View>
+        </View>
+
+        {activities.length > 0 && (
+          <Text style={[globalStyles.sectionTitle, { marginTop: 16 }]}>
+            Activités du jour
+          </Text>
+        )}
+      </>
+    );
+  }, [name, duration, caloriesBurned, totalBurned, totalDuration, activities]);
+
   return (
-    <View style={globalStyles.container}>
-      <Text style={globalStyles.titre}>Activité du {today}</Text>
+    <FlatList
+      contentContainerStyle={globalStyles.scrollContainer}
+      data={activities}
+      ListHeaderComponent={generateHeader}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => {
+        const isExpanded = item.id === expandedId;
 
-      <TextInput
-        style={globalStyles.input}
-        value={name}
-        onChangeText={setNames}
-        placeholder="Type d'activité (ex: course)"
-      />
-      <TextInput
-        style={globalStyles.input}
-        value={duration}
-        onChangeText={setDuration}
-        placeholder="Durée (minutes)"
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={globalStyles.input}
-        value={caloriesBurned}
-        onChangeText={setCaloriesBurned}
-        placeholder="Calories brûlées (optionnel)"
-        keyboardType="numeric"
-      />
-      <Button title="Ajouter" onPress={add} />
+        return (
+          <TouchableOpacity onPress={() => toggleExpand(item.id)}>
+            <View style={globalStyles.ligne}>
+              <Text>{item.name}</Text>
+              <Text>{Math.round(item.calories_burned)} kcal</Text>
+            </View>
 
-      <Text style={globalStyles.total}>Total brûlé : {totalBurned} kcal</Text>
-      <Text style={globalStyles.total}>
-        Total activité : {totalDuration} min
-      </Text>
-
-      <FlatList
-        style={globalStyles.liste}
-        data={activities}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => {
-          const isExpanded = item.id === expandedId;
-
-          return (
-            <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-              <View style={globalStyles.ligne}>
-                <Text>{item.name}</Text>
-                <Text>{Math.round(item.calories_burned)} kcal</Text>
-              </View>
-
-              {isExpanded &&
-                (editingId === item.id ? ( // edit mode
-                  <View style={globalStyles.details}>
-                    <Text>Nom de l'activité :</Text>
-                    <TextInput
-                      value={editNameValue}
-                      onChangeText={setEditNameValue}
-                      placeholder="Course"
-                    />
-                    <Text>Durée de l'activité (minutes) :</Text>
-                    <TextInput
-                      value={editDurationValue}
-                      keyboardType="numeric"
-                      onChangeText={setEditDurationValue}
-                      placeholder="min"
-                    />
-                    <Text>Calories brulées (Kcal) :</Text>
-                    <TextInput
-                      value={editCaloriesValue}
-                      keyboardType="numeric"
-                      onChangeText={setEditCaloriesValue}
-                      placeholder="Kcal"
-                    />
-                    <TouchableOpacity
-                      style={globalStyles.primaryButton}
-                      activeOpacity={0.6}
-                      onPress={saveEdit}
-                    >
-                      <Text style={globalStyles.primaryButtonText}>
-                        Enregistrer
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={globalStyles.details}>
-                    <Text>Durée : {item.duration} min</Text>
-                    <TouchableOpacity
-                      style={[
-                        globalStyles.primaryButton,
-                        { backgroundColor: "#4CAF50" },
-                      ]}
-                      onPress={() => {
-                        setEditingId(item.id);
-                        setEditNameValue(item.name.toString());
-                        setEditDurationValue(item.duration.toString());
-                        setEditCaloriesValue(item.calories_burned.toString());
-                      }}
-                    >
-                      <Text style={globalStyles.primaryButtonText}>
-                        Modifier
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        globalStyles.primaryButton,
-                        { backgroundColor: "#e53935" },
-                      ]}
-                      onPress={() => confirmDelete(item.id)}
-                    >
-                      <Text style={globalStyles.primaryButtonText}>
-                        Supprimer
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-            </TouchableOpacity>
-          );
-        }}
-      />
-    </View>
+            {isExpanded &&
+              (editingId === item.id ? ( // edit mode
+                <View style={globalStyles.details}>
+                  <Text>Nom de l'activité :</Text>
+                  <TextInput
+                    style={globalStyles.input}
+                    value={editNameValue}
+                    onChangeText={setEditNameValue}
+                    placeholder="Course"
+                  />
+                  <Text>Durée de l'activité (minutes) :</Text>
+                  <TextInput
+                    style={globalStyles.input}
+                    value={editDurationValue}
+                    keyboardType="numeric"
+                    onChangeText={setEditDurationValue}
+                    placeholder="min"
+                  />
+                  <Text>Calories brûlées (Kcal) :</Text>
+                  <TextInput
+                    style={globalStyles.input}
+                    value={editCaloriesValue}
+                    keyboardType="numeric"
+                    onChangeText={setEditCaloriesValue}
+                    placeholder="Kcal"
+                  />
+                  <TouchableOpacity
+                    style={globalStyles.primaryButton}
+                    activeOpacity={0.6}
+                    onPress={saveEdit}
+                  >
+                    <Text style={globalStyles.primaryButtonText}>
+                      Enregistrer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={globalStyles.details}>
+                  <Text>Durée : {item.duration} min</Text>
+                  <TouchableOpacity
+                    style={[
+                      globalStyles.primaryButton,
+                      { backgroundColor: "#4CAF50" },
+                    ]}
+                    onPress={() => {
+                      setEditingId(item.id);
+                      setEditNameValue(item.name.toString());
+                      setEditDurationValue(item.duration.toString());
+                      setEditCaloriesValue(item.calories_burned.toString());
+                    }}
+                  >
+                    <Text style={globalStyles.primaryButtonText}>
+                      Modifier
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      globalStyles.primaryButton,
+                      { backgroundColor: "#e53935" },
+                    ]}
+                    onPress={() => confirmDelete(item.id)}
+                  >
+                    <Text style={globalStyles.primaryButtonText}>
+                      Supprimer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+          </TouchableOpacity>
+        );
+      }}
+    />
   );
 }

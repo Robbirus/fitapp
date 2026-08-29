@@ -1,3 +1,5 @@
+import { computeWeightedScore } from "../utils/FoodScore";
+
 // --- Diary Entries ---
 export async function loadDiaryEntries(db, date) {
   return await db.getAllAsync(
@@ -7,8 +9,13 @@ export async function loadDiaryEntries(db, date) {
 }
 
 export async function loadRecentFoods(db, limit = 15) {
+  // score/score_type/etc. are plain (non-aggregated) columns here, so SQLite's
+  // "bare column" behavior returns them from the same row as MAX(id) -- the
+  // most recent entry for that food name.
   return await db.getAllAsync(
-    `SELECT name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, MAX(id) as last_id
+    `SELECT name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g,
+       score, score_type, nutriscore_grade, is_organic, origin_category,
+       MAX(id) as last_id
      FROM diary_entries
      GROUP BY name
      ORDER BY last_id DESC
@@ -19,8 +26,10 @@ export async function loadRecentFoods(db, limit = 15) {
 
 export async function addDiaryEntry(db, entry, date, mealType) {
   return await db.runAsync(
-    `INSERT INTO diary_entries (name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g, date, meal_type)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO diary_entries
+      (name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g, date, meal_type,
+       score, score_type, nutriscore_grade, is_organic, origin_category)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.name,
       entry.calories100g,
@@ -31,6 +40,15 @@ export async function addDiaryEntry(db, entry, date, mealType) {
       entry.quantityG,
       date,
       mealType,
+      entry.score ?? null,
+      entry.scoreType ?? null,
+      entry.nutriscoreGrade ?? null,
+      entry.isOrganic === undefined || entry.isOrganic === null
+        ? null
+        : entry.isOrganic
+          ? 1
+          : 0,
+      entry.originCategory ?? null,
     ],
   );
 }
@@ -144,7 +162,6 @@ export async function updateActivityEntry(
     [name, duration, calories_burned, date, id],
   );
 }
-
 // --- Settings ---
 export async function loadSettings(db) {
   return await db.getFirstAsync("SELECT * FROM settings WHERE id = 1");
@@ -152,13 +169,16 @@ export async function loadSettings(db) {
 
 export async function updateSettings(db, settings) {
   return await db.runAsync(
-    "UPDATE settings SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ?, fiber_goal = ? WHERE id = 1",
+    `UPDATE settings 
+     SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ?, fiber_goal = ?, water_goal = ? 
+     WHERE id = 1`,
     [
       settings.calorieGoal,
       settings.proteinGoal,
       settings.carbsGoal,
       settings.fatGoal,
       settings.fiberGoal,
+      settings.waterGoal ?? 2.0,
     ],
   );
 }
@@ -172,7 +192,8 @@ export async function updateProfileSettings(db, profile) {
   return await db.runAsync(
     `UPDATE profileSettings
      SET name = ?, height = ?, age = ?, gender = ?, activity_level = ?,
-         weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?, ethnicity = ?
+         weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?, ethnicity = ?,
+         meal_times = ?, water_goal = ?, diet_style = ?
      WHERE id = 1`,
     [
       profile.name,
@@ -185,6 +206,9 @@ export async function updateProfileSettings(db, profile) {
       profile.goalStartDate,
       profile.goalStartWeight,
       profile.ethnicity,
+      profile.mealTimes,
+      profile.waterGoal,
+      profile.dietStyle,
     ],
   );
 }
@@ -243,4 +267,115 @@ export async function updateBodyMeasurementEntry(
     "UPDATE body_measurements SET neck = ?, waist = ?, hip = ?, date = ? WHERE id = ?",
     [neck, waist, hip, date, id],
   );
+}
+
+// --- Recipes ---
+
+// Vue liste : nom + total kcal de la recette telle qu'enregistrée (quantités par défaut)
+export async function loadRecipes(db) {
+  return await db.getAllAsync(
+    `SELECT r.id, r.name, r.created_at, r.score,
+       COALESCE(SUM((ri.calories_100g * ri.quantity_g) / 100), 0) AS total_calories,
+       COALESCE(SUM(ri.quantity_g), 0) AS total_weight_g,
+       COUNT(ri.id) AS ingredient_count
+     FROM recipes r
+     LEFT JOIN recipe_ingredients ri ON ri.recipe_id = r.id
+     GROUP BY r.id
+     ORDER BY r.id DESC`,
+  );
+}
+
+export async function loadRecipeWithIngredients(db, recipeId) {
+  const recipe = await db.getFirstAsync(
+    "SELECT * FROM recipes WHERE id = ?",
+    [recipeId],
+  );
+  if (!recipe) return null;
+  const ingredients = await db.getAllAsync(
+    "SELECT * FROM recipe_ingredients WHERE recipe_id = ? ORDER BY id ASC",
+    [recipeId],
+  );
+  return { ...recipe, ingredients };
+}
+
+async function insertRecipeIngredients(db, recipeId, ingredients) {
+  for (const ing of ingredients) {
+    await db.runAsync(
+      `INSERT INTO recipe_ingredients
+        (recipe_id, name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g,
+         score, score_type, nutriscore_grade, is_organic, origin_category)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        recipeId,
+        ing.name,
+        ing.calories100g,
+        ing.protein100g || 0,
+        ing.carbs100g || 0,
+        ing.fat100g || 0,
+        ing.fiber100g || 0,
+        ing.quantityG,
+        ing.score ?? null,
+        ing.scoreType ?? null,
+        ing.nutriscoreGrade ?? null,
+        ing.isOrganic === undefined || ing.isOrganic === null
+          ? null
+          : ing.isOrganic
+            ? 1
+            : 0,
+        ing.originCategory ?? null,
+      ],
+    );
+  }
+}
+
+// Recomputes and persists the recipe's overall score (weighted average of its
+// ingredients' scores, weighted by quantity). Called after every insert/update
+// so the recipe list can display it without recalculating on every render.
+async function refreshRecipeScore(db, recipeId, ingredients) {
+  const score = computeWeightedScore(
+    ingredients.map((ing) => ({ score: ing.score, quantityG: ing.quantityG })),
+  );
+  await db.runAsync("UPDATE recipes SET score = ? WHERE id = ?", [
+    score,
+    recipeId,
+  ]);
+}
+
+// ingredients: [{ name, calories100g, protein100g, carbs100g, fat100g, fiber100g, quantityG,
+//                 score, scoreType, nutriscoreGrade, isOrganic, originCategory }, ...]
+export async function createRecipe(db, name, ingredients) {
+  let recipeId;
+  await db.withTransactionAsync(async () => {
+    const result = await db.runAsync(
+      "INSERT INTO recipes (name, created_at) VALUES (?, ?)",
+      [name, new Date().toISOString()],
+    );
+    recipeId = result.lastInsertRowId;
+    await insertRecipeIngredients(db, recipeId, ingredients);
+    await refreshRecipeScore(db, recipeId, ingredients);
+  });
+  return recipeId;
+}
+
+export async function updateRecipe(db, recipeId, name, ingredients) {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync("UPDATE recipes SET name = ? WHERE id = ?", [
+      name,
+      recipeId,
+    ]);
+    await db.runAsync("DELETE FROM recipe_ingredients WHERE recipe_id = ?", [
+      recipeId,
+    ]);
+    await insertRecipeIngredients(db, recipeId, ingredients);
+    await refreshRecipeScore(db, recipeId, ingredients);
+  });
+}
+
+export async function deleteRecipe(db, recipeId) {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync("DELETE FROM recipe_ingredients WHERE recipe_id = ?", [
+      recipeId,
+    ]);
+    await db.runAsync("DELETE FROM recipes WHERE id = ?", [recipeId]);
+  });
 }

@@ -8,57 +8,46 @@ import {
 import { calculateGoals } from "../utils/NutritionCalculator";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  Text,
-  View,
-  TextInput,
-  Button,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { ScrollView, TouchableOpacity, Text } from "react-native";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 
-const ETHNICITY_OPTIONS = [
-  { value: "caucasian", label: "Caucasien" },
-  { value: "afro-american", label: "Afro-Américain" },
-  { value: "asian", label: "Asiatique" },
-];
-
-const ACTIVITY_OPTIONS = [
-  { value: "sedentary", label: "Sédentaire" },
-  { value: "light", label: "Léger" },
-  { value: "moderate", label: "Modéré" },
-  { value: "active", label: "Intense" },
-];
-
-const GOAL_OPTIONS = [
-  { value: "lose", label: "Perdre" },
-  { value: "maintain", label: "Maintenir" },
-  { value: "gain", label: "Prendre" },
-];
-
-const RATE_OPTIONS = [0.25, 0.5, 0.75, 1];
+import PersonalInfoSection from "../components/profile/PersonalInfoSection";
+import GoalsSection from "../components/profile/GoalsSection";
+import DietStyleSection from "../components/profile/DietStyleSection";
+import MealTimesSection from "../components/profile/MealTimesSection";
 
 export default function ProfileScreen({ navigation }) {
   const db = useDatabase();
   const [profile, setProfile] = useState(null);
   const [latestWeight, setLatestWeight] = useState(null);
 
-  // Form fields
+  // Informations personnelles
   const [name, setName] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState(1);
   const [ethnicity, setEthnicity] = useState("caucasian");
+
+  // Objectifs
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [weightGoal, setWeightGoal] = useState("maintain");
   const [weightGoalRate, setWeightGoalRate] = useState(0.5);
+  const [dietStyle, setDietStyle] = useState("balanced");
+
+  // Horaires de repas & Hydratation
+  const [mealTimes, setMealTimes] = useState({
+    breakfast: "08:00",
+    lunch: "12:30",
+    snack: "16:30",
+    dinner: "20:00",
+  });
+  const [waterGoal, setWaterGoal] = useState("2.0");
 
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, []),
+    }, [])
   );
 
   const loadData = async () => {
@@ -72,6 +61,10 @@ export default function ProfileScreen({ navigation }) {
     setActivityLevel(p.activity_level);
     setWeightGoal(p.weight_goal);
     setWeightGoalRate(p.weight_goal_rate);
+    setDietStyle(p.diet_style || "balanced");
+
+    if (p.meal_times) setMealTimes(JSON.parse(p.meal_times));
+    if (p.water_goal) setWaterGoal(p.water_goal.toString());
 
     const w = await loadLatestWeight(db);
     setLatestWeight(w?.value || null);
@@ -79,9 +72,7 @@ export default function ProfileScreen({ navigation }) {
 
   const save = async () => {
     if (!latestWeight) {
-      alert(
-        "Ajoute d'abord une entrée de poids dans l'onglet Poids avant de configurer ton profil.",
-      );
+      alert("Ajoute d'abord une entrée de poids dans l'onglet Poids avant de configurer ton profil.");
       return;
     }
 
@@ -94,13 +85,15 @@ export default function ProfileScreen({ navigation }) {
       activityLevel,
       weightGoal,
       weightGoalRate: weightGoal === "maintain" ? 0 : weightGoalRate,
+      dietStyle,
       goalStartDate: getTodayISO(),
       goalStartWeight: latestWeight,
+      mealTimes: JSON.stringify(mealTimes),
+      waterGoal: parseFloat(waterGoal),
     };
 
     await updateProfileSettings(db, profileData);
 
-    // Recalculates and saves the nutritional objectives
     const goals = calculateGoals({ weight: latestWeight, ...profileData });
     await updateSettings(db, {
       calorieGoal: goals.calorieGoal,
@@ -108,6 +101,7 @@ export default function ProfileScreen({ navigation }) {
       carbsGoal: goals.carbsGoal,
       fatGoal: goals.fatGoal,
       fiberGoal: goals.fiberGoal,
+      waterGoal: parseFloat(waterGoal),
     });
 
     alert("Information et objectifs mis à jour !");
@@ -118,183 +112,40 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>Vos informations</Text>
-
-      <Text style={globalStyles.label}>Nom :</Text>
-      <TextInput
-        style={globalStyles.input}
-        value={name}
-        onChangeText={setName}
+      <PersonalInfoSection
+        name={name} setName={setName}
+        height={height} setHeight={setHeight}
+        age={age} setAge={setAge}
+        gender={gender} setGender={setGender}
+        ethnicity={ethnicity} setEthnicity={setEthnicity}
       />
 
-      <Text style={globalStyles.label}>Taille (cm) :</Text>
-      <TextInput
-        style={globalStyles.input}
-        value={height}
-        onChangeText={setHeight}
-        keyboardType="numeric"
+      <GoalsSection
+        activityLevel={activityLevel} setActivityLevel={setActivityLevel}
+        weightGoal={weightGoal} setWeightGoal={setWeightGoal}
+        weightGoalRate={weightGoalRate} setWeightGoalRate={setWeightGoalRate}
+        latestWeight={latestWeight}
       />
 
-      <Text style={globalStyles.label}>Âge :</Text>
-      <TextInput
-        style={globalStyles.input}
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
+      <DietStyleSection
+        dietStyle={dietStyle} setDietStyle={setDietStyle}
       />
 
-      <Text style={globalStyles.label}>Sexe :</Text>
-      <View style={globalStyles.optionsRow}>
-        {[
-          { value: 1, label: "Homme" },
-          { value: 2, label: "Femme" },
-        ].map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[
-              globalStyles.option,
-              gender === opt.value && globalStyles.optionSelected,
-            ]}
-            onPress={() => setGender(opt.value)}
-          >
-            <Text
-              style={
-                gender === opt.value
-                  ? globalStyles.optionTextSelected
-                  : globalStyles.optionText
-              }
-            >
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={globalStyles.label}>Ethnie :</Text>
-      <View style={globalStyles.optionsRow}>
-        {ETHNICITY_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[
-              globalStyles.option,
-              ethnicity === opt.value && globalStyles.optionSelected,
-            ]}
-            onPress={() => setEthnicity(opt.value)}
-          >
-            <Text
-              style={
-                ethnicity === opt.value
-                  ? globalStyles.optionTextSelected
-                  : globalStyles.optionText
-              }
-            >
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={globalStyles.label}>Niveau d'activité :</Text>
-      <View style={globalStyles.optionsRow}>
-        {ACTIVITY_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[
-              globalStyles.option,
-              activityLevel === opt.value && globalStyles.optionSelected,
-            ]}
-            onPress={() => setActivityLevel(opt.value)}
-          >
-            <Text
-              style={
-                activityLevel === opt.value
-                  ? globalStyles.optionTextSelected
-                  : globalStyles.optionText
-              }
-            >
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={globalStyles.label}>Objectif :</Text>
-      <View style={globalStyles.optionsRow}>
-        {GOAL_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[
-              globalStyles.option,
-              weightGoal === opt.value && globalStyles.optionSelected,
-            ]}
-            onPress={() => setWeightGoal(opt.value)}
-          >
-            <Text
-              style={
-                weightGoal === opt.value
-                  ? globalStyles.optionTextSelected
-                  : globalStyles.optionText
-              }
-            >
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {weightGoal !== "maintain" && (
-        <>
-          <Text style={globalStyles.label}>Rythme (kg / semaine) :</Text>
-          <View style={globalStyles.optionsRow}>
-            {RATE_OPTIONS.map((rate) => (
-              <TouchableOpacity
-                key={rate}
-                style={[
-                  globalStyles.option,
-                  weightGoalRate === rate && globalStyles.optionSelected,
-                ]}
-                onPress={() => setWeightGoalRate(rate)}
-              >
-                <Text
-                  style={
-                    weightGoalRate === rate
-                      ? globalStyles.optionTextSelected
-                      : globalStyles.optionText
-                  }
-                >
-                  {rate}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
-
-      <Text style={globalStyles.weightInfo}>
-        Poids actuel utilisé pour le calcul :{" "}
-        {latestWeight ? `${latestWeight} kg` : "aucune entrée"}
-      </Text>
+      <MealTimesSection
+        mealTimes={mealTimes} setMealTimes={setMealTimes}
+        waterGoal={waterGoal} setWaterGoal={setWaterGoal}
+      />
 
       <TouchableOpacity style={globalStyles.primaryButton} onPress={save}>
-        <Text style={globalStyles.primaryButtonText}>
-          Enregistrer et recalculer mes objectifs
-        </Text>
+        <Text style={globalStyles.primaryButtonText}>Enregistrer et recalculer mes objectifs</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={globalStyles.primaryButton}
-        onPress={() => navigation.navigate("Poids")}
-      >
+      <TouchableOpacity style={globalStyles.primaryButton} onPress={() => navigation.navigate("Poids")}>
         <Text style={globalStyles.primaryButtonText}>Mon poids</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={globalStyles.primaryButton}
-        onPress={() => navigation.navigate("Mesures")}
-      >
-        <Text style={globalStyles.primaryButtonText}>
-          Mes mesures corporelles
-        </Text>
+      <TouchableOpacity style={globalStyles.primaryButton} onPress={() => navigation.navigate("Mesures")}>
+        <Text style={globalStyles.primaryButtonText}>Mes mesures corporelles</Text>
       </TouchableOpacity>
     </ScrollView>
   );

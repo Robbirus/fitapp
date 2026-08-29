@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -11,27 +11,19 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useDatabase } from "../db/DatabaseContext";
-import { addDiaryEntry, loadRecentFoods } from "../db/Queries";
+import { addDiaryEntry, loadRecentFoods, loadProfileSettings } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
-
-const guessMealFromCurrentTime = () => {
-  const hour = new Date().getHours();
-  if (hour < 11) {
-    return "Petit Dejeuner";
-  }
-  if (hour < 15) {
-    return "Dejeuner";
-  }
-  if (hour < 18) {
-    return "Snack";
-  }
-  if (hour < 21) {
-    return "Diner";
-  }
-
-  return "Snack";
-};
+import {
+  DEFAULT_MEAL_TIMES,
+  MEAL_PERIOD,
+  guessMealFromTimes,
+} from "../utils/MealHelpers";
+import {
+  computeScoreFromOFF,
+  computeScoreFromMacros,
+  getScoreBand,
+} from "../utils/FoodScore";
 
 export default function ScannerScreen({ navigation }) {
   const db = useDatabase();
@@ -54,14 +46,31 @@ export default function ScannerScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(guessMealFromCurrentTime());
+  const [mealTimes, setMealTimes] = useState(DEFAULT_MEAL_TIMES);
+  const [selectedMeal, setSelectedMeal] = useState(() =>
+    guessMealFromTimes(DEFAULT_MEAL_TIMES),
+  );
+  // Finished score object ({ score, scoreType, nutriscoreGrade, isOrganic, originCategory })
+  // for OFF-sourced foods. Left null for manual entry, in which case the score is
+  // recomputed live from the current macro fields (see getCurrentScore below).
+  const [foodScore, setFoodScore] = useState(null);
 
-  const MEAL_PERIOD = [
-    { value: "Petit Dejeuner", label: "Petit Dejeuner" },
-    { value: "Dejeuner", label: "Dejeuner" },
-    { value: "Snack", label: "Snack" },
-    { value: "Diner", label: "Diner" },
-  ];
+  useEffect(() => {
+    const loadMealTimes = async () => {
+      if (!db) return;
+      try {
+        const profile = await loadProfileSettings(db);
+        if (profile?.meal_times) {
+          const parsed = JSON.parse(profile.meal_times);
+          setMealTimes(parsed);
+          setSelectedMeal(guessMealFromTimes(parsed));
+        }
+      } catch (error) {
+        console.log("ERROR loading meal times from profile:", error.message);
+      }
+    };
+    loadMealTimes();
+  }, [db]);
 
   if (!permission) {
     return (
@@ -84,14 +93,23 @@ export default function ScannerScreen({ navigation }) {
   const selectSearchResult = (product) => {
     const n = product.nutriments || {};
     setName(product.product_name || "Produit inconnu");
-    setCalories100g(Math.round(n["energy-kcal_100g"] || 0).toString());
-    setProtein100g((n["proteins_100g"] || 0).toString());
+    const cal = Math.round(n["energy-kcal_100g"] || 0);
+    const protein = n["proteins_100g"] || 0;
+    const fat = n["fat_100g"] || 0;
+    setCalories100g(cal.toString());
+    setProtein100g(protein.toString());
     setCarbs100g((n["carbohydrates_100g"] || 0).toString());
-    setFat100g((n["fat_100g"] || 0).toString());
+    setFat100g(fat.toString());
 
     const fiberVal = n["fiber_100g"] ?? n["fiber"] ?? n["fiber_value"];
-    setFiber100g(
-      fiberVal !== undefined && fiberVal !== null ? fiberVal.toString() : "0",
+    const fiber = fiberVal !== undefined && fiberVal !== null ? parseFloat(fiberVal) : 0;
+    setFiber100g(fiber.toString());
+
+    // Full OFF product data lets us compute a real score (nutrition + additives + bio + origin);
+    // fall back to the macros-only estimate if this product has no nutriscore_grade.
+    setFoodScore(
+      computeScoreFromOFF(product) ??
+        computeScoreFromMacros({ calories100g: cal, protein100g: protein, fiber100g: fiber, fat100g: fat }),
     );
 
     setSearchMode(false);
@@ -118,6 +136,28 @@ export default function ScannerScreen({ navigation }) {
     setCarbs100g(item.carbs_100g.toString());
     setFat100g(item.fat_100g.toString());
     setFiber100g((item.fiber_100g || 0).toString());
+
+    // Reuse the score already computed when this food was first logged, if available.
+    // Older entries logged before the scoring feature existed won't have one -> estimate on the fly.
+    if (item.score !== null && item.score !== undefined) {
+      setFoodScore({
+        score: item.score,
+        scoreType: item.score_type,
+        nutriscoreGrade: item.nutriscore_grade,
+        isOrganic: item.is_organic === 1,
+        originCategory: item.origin_category,
+      });
+    } else {
+      setFoodScore(
+        computeScoreFromMacros({
+          calories100g: item.calories_100g,
+          protein100g: item.protein_100g,
+          fiber100g: item.fiber_100g || 0,
+          fat100g: item.fat_100g,
+        }),
+      );
+    }
+
     setRecentMode(false);
     setFound(true);
   };
@@ -131,6 +171,7 @@ export default function ScannerScreen({ navigation }) {
     setFiber100g("");
     setQuantity("");
     setShowMacros(true); // displays the macros directly, useful for manual entry
+    setFoodScore(null); // no OFF data -> score is derived live from the macro fields
     setFound(true);
   };
 
@@ -165,21 +206,31 @@ export default function ScannerScreen({ navigation }) {
         const n = p.nutriments || {};
 
         setName(p.product_name || "Produit inconnu");
-        setCalories100g(Math.round(n["energy-kcal_100g"] || 0).toString());
-        setProtein100g((n["proteins_100g"] || 0).toString());
+        const cal = Math.round(n["energy-kcal_100g"] || 0);
+        const protein = n["proteins_100g"] || 0;
+        const fat = n["fat_100g"] || 0;
+        setCalories100g(cal.toString());
+        setProtein100g(protein.toString());
         setCarbs100g((n["carbohydrates_100g"] || 0).toString());
-        setFat100g((n["fat_100g"] || 0).toString());
+        setFat100g(fat.toString());
 
         const fiberVal = n["fiber_100g"] ?? n["fiber"] ?? n["fiber_value"];
+        let fiber = 0;
 
         if (fiberVal !== undefined && fiberVal !== null) {
-          setFiber100g(fiberVal.toString());
+          fiber = parseFloat(fiberVal);
+          setFiber100g(fiber.toString());
         } else {
           console.log(
             "Fibers not included in this product’s Open Food Facts sheet.",
           );
           setFiber100g("0");
         }
+
+        setFoodScore(
+          computeScoreFromOFF(p) ??
+            computeScoreFromMacros({ calories100g: cal, protein100g: protein, fiber100g: fiber, fat100g: fat }),
+        );
         setFound(true);
       }
     } catch (error) {
@@ -188,6 +239,19 @@ export default function ScannerScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Returns the score to display/save right now: the OFF-computed score if we have
+  // one, otherwise a live estimate from whatever is currently typed in the macro fields
+  // (covers manual entry, and keeps updating as the user edits those fields).
+  const getCurrentScore = () => {
+    if (foodScore) return foodScore;
+    return computeScoreFromMacros({
+      calories100g: parseFloat(calories100g) || 0,
+      protein100g: parseFloat(protein100g) || 0,
+      fiber100g: parseFloat(fiber100g) || 0,
+      fat100g: parseFloat(fat100g) || 0,
+    });
   };
 
   const addToJournal = async () => {
@@ -215,6 +279,7 @@ export default function ScannerScreen({ navigation }) {
     }
 
     const today = getTodayISO();
+    const scoreResult = getCurrentScore();
 
     try {
       await addDiaryEntry(
@@ -227,6 +292,11 @@ export default function ScannerScreen({ navigation }) {
           fat100g: parseFloat(fat100g) || 0,
           fiber100g: parseFloat(fiber100g) || 0,
           quantityG: parsedQuantity,
+          score: scoreResult.score,
+          scoreType: scoreResult.scoreType,
+          nutriscoreGrade: scoreResult.nutriscoreGrade,
+          isOrganic: scoreResult.isOrganic,
+          originCategory: scoreResult.originCategory,
         },
         today,
         selectedMeal,
@@ -248,9 +318,10 @@ export default function ScannerScreen({ navigation }) {
     setCarbs100g("");
     setFat100g("");
     setFiber100g("");
-    setSelectedMeal(guessMealFromCurrentTime());
+    setSelectedMeal(guessMealFromTimes(mealTimes));
     setQuantity("");
     setShowMacros(false);
+    setFoodScore(null);
     setScanning(true);
   };
 
@@ -371,9 +442,28 @@ export default function ScannerScreen({ navigation }) {
   }
 
   if (found) {
+    const currentScore = getCurrentScore();
+    const scoreBand = getScoreBand(currentScore.score);
+
     return (
       <ScrollView>
         <View style={globalStyles.center}>
+          <View
+            style={{
+              backgroundColor: scoreBand.color,
+              borderRadius: 8,
+              paddingVertical: 6,
+              paddingHorizontal: 14,
+              alignSelf: "center",
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              {scoreBand.label} · {Math.round(currentScore.score)}/100
+              {currentScore.scoreType === "estimate" ? " (estimation)" : ""}
+            </Text>
+          </View>
+
           <Text style={globalStyles.label}>Repas :</Text>
           <View style={globalStyles.optionsRow}>
             {MEAL_PERIOD.map((opt) => (

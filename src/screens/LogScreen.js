@@ -356,6 +356,14 @@ export default function JournalScreen({ navigation }) {
       >
         <Text style={globalStyles.primaryButtonText}>Scanner un produit</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[globalStyles.primaryButton, { backgroundColor: "#8E44AD" }]}
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate("Recipes")}
+      >
+        <Text style={globalStyles.primaryButtonText}>Mes recettes</Text>
+      </TouchableOpacity>
     </View>
   );
 }

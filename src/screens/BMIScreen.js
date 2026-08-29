@@ -2,15 +2,22 @@ import { useDatabase } from "../db/DatabaseContext";
 import { loadLatestWeight, loadProfileSettings } from "../db/Queries";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { Text, View, TouchableOpacity } from "react-native";
-import { getTodayISO } from "../utils/DateHelpers";
+import { Text, View, ScrollView, TouchableOpacity } from "react-native";
 import { globalStyles } from "../styles/GlobalStyles";
+import {
+  calculateBMI,
+  obtainBMICategory,
+  getBMIZones,
+  getCategoryColors,
+  getBMIRecommendation,
+} from "../utils/BodyCompositionCalculator";
+import { getDaysSince } from "../utils/DateHelpers";
+import CircleGauge from "../components/CircleGauge";
 
 export default function BMIScreen({ navigation }) {
   const db = useDatabase();
   const [mass, setMass] = useState([]);
-
-  const today = getTodayISO();
+  const [measurementDate, setMeasurementDate] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,9 +29,12 @@ export default function BMIScreen({ navigation }) {
     const latestWeight = await loadLatestWeight(db);
     const profileSettings = await loadProfileSettings(db);
     setMass([latestWeight?.value, profileSettings]);
+    setMeasurementDate(latestWeight?.date);
   };
 
-  if (!mass[0]) {
+  const bmi = calculateBMI(mass[0], mass[1]?.height);
+
+  if (bmi === null) {
     return (
       <View style={globalStyles.container}>
         <Text>
@@ -35,31 +45,132 @@ export default function BMIScreen({ navigation }) {
     );
   }
 
-  const calculateBMI = (weight, height) => {
-    if (!weight || !height) return null;
-    const heightInMeters = height / 100;
-    return (weight / (heightInMeters * heightInMeters)).toFixed(2);
-  };
 
-  const obtainBMICategory = (bmi) => {
-    if (bmi < 18.5) return "Insuffisance pondérale";
-    if (bmi >= 18.5 && bmi < 24.9) return "Poids normal";
-    if (bmi >= 25 && bmi < 29.9) return "Surpoids";
-    if (bmi >= 30) return "Obésité";
-    return null;
-  };
+  const daysOld = measurementDate ? getDaysSince(measurementDate) : null;
+  if (daysOld !== null && daysOld > 7) {
+    return (
+      <View style={globalStyles.container}>
+        <Text>
+          Ton dernier poids date de {daysOld} jours. Pèse-toi pour voir tes
+          résultats.
+        </Text>
+      </View>
+    );
+  }
 
-  const bmi = calculateBMI(mass[0], mass[1]?.height);
+  const isStale = daysOld !== null && daysOld > 3;
+
+  const category = obtainBMICategory(bmi);
+  const colors = getCategoryColors(category);
+  const zonesData = getBMIZones();
 
   return (
-    <View style={globalStyles.container}>
-      <Text style={globalStyles.titre}>Calculateur d'IMC</Text>
-      <Text style={globalStyles.label}>Poids actuel : {mass[0]} kg</Text>
-      <Text style={globalStyles.label}>Taille : {mass[1]?.height} cm</Text>
-      <Text style={globalStyles.label}>IMC : {bmi}</Text>
-      <Text style={globalStyles.label}>
-        Catégorie : {obtainBMICategory(bmi)}
+    <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
+      {isStale && (
+        <View style={globalStyles.warningBanner}>
+          <Text style={globalStyles.warningText}>
+            ⚠️ Ton dernier poids date de {daysOld} jours. Les résultats
+            ci-dessous sont basés sur une valeur non à jour. Pèse-toi pour plus
+            de précision.
+          </Text>
+        </View>
+      )}
+
+      <Text style={globalStyles.subTitle}>Indice de Masse Corporelle (IMC)</Text>
+      <View style={globalStyles.card}>
+        <Text style={globalStyles.mainTitle}>VOTRE IMC</Text>
+        <Text style={globalStyles.heroValue}>{bmi.toFixed(1)}</Text>
+        <View style={[globalStyles.pillBadge, { backgroundColor: colors.bg }]}>
+          <Text style={[globalStyles.pillBadgeText, { color: colors.text }]}>
+            {category}
+          </Text>
+        </View>
+      </View>
+
+      <View style={globalStyles.gridContainer}>
+        <View style={globalStyles.miniCard}>
+          <Text style={globalStyles.miniCardTitle}>Poids</Text>
+          <Text style={globalStyles.miniCardValue}>
+            {mass[0]} <Text style={globalStyles.miniCardUnit}>kg</Text>
+          </Text>
+        </View>
+
+        <View style={globalStyles.miniCard}>
+          <Text style={globalStyles.miniCardTitle}>Taille</Text>
+          <Text style={globalStyles.miniCardValue}>
+            {mass[1]?.height} <Text style={globalStyles.miniCardUnit}>cm</Text>
+          </Text>
+        </View>
+      </View>
+
+      <CircleGauge
+        value={bmi}
+        min={zonesData.min}
+        max={zonesData.max}
+        zones={zonesData.zones}
+      />
+
+      <Text style={globalStyles.sectionTitle}>Plages de référence OMS</Text>
+      <Text style={globalStyles.sectionSubtitle}>
+        Classification internationale de l'IMC
       </Text>
+
+      <View
+        style={[
+          globalStyles.scaleRow,
+          category === "Insuffisance pondérale" && globalStyles.activeScaleRow,
+        ]}
+      >
+        <Text style={globalStyles.scaleLabel}>Insuffisance</Text>
+        <Text style={globalStyles.scaleValue}>{"<"} 18.5</Text>
+      </View>
+      <View
+        style={[
+          globalStyles.scaleRow,
+          category === "Poids normal" && globalStyles.activeScaleRow,
+        ]}
+      >
+        <Text style={globalStyles.scaleLabel}>Normal</Text>
+        <Text style={globalStyles.scaleValue}>18.5 - 24.9</Text>
+      </View>
+      <View
+        style={[
+          globalStyles.scaleRow,
+          category === "Surpoids" && globalStyles.activeScaleRow,
+        ]}
+      >
+        <Text style={globalStyles.scaleLabel}>Surpoids</Text>
+        <Text style={globalStyles.scaleValue}>25 - 29.9</Text>
+      </View>
+      <View
+        style={[
+          globalStyles.scaleRow,
+          category === "Obésité" && globalStyles.activeScaleRow,
+        ]}
+      >
+        <Text style={globalStyles.scaleLabel}>Obésité</Text>
+        <Text style={globalStyles.scaleValue}>{">="} 30</Text>
+      </View>
+
+      <Text style={globalStyles.sectionTitle}>Recommandation</Text>
+      <View style={[globalStyles.riskAlertBox, { backgroundColor: colors.bg }]}>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[globalStyles.riskAlertDescription, { color: colors.text }]}
+          >
+            {getBMIRecommendation(category)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={globalStyles.infoBanner}>
+        <Text style={globalStyles.infoText}>
+          L'IMC est un indicateur global basé uniquement sur le poids et la
+          taille : il ne distingue pas la masse grasse de la masse musculaire.
+          Il ne remplace pas un avis médical.
+        </Text>
+      </View>
+
       <TouchableOpacity
         style={globalStyles.primaryButton}
         activeOpacity={0.6}
@@ -69,6 +180,6 @@ export default function BMIScreen({ navigation }) {
           Modifier les paramètres du profile
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
