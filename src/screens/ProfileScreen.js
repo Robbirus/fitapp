@@ -112,6 +112,15 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
+      <TouchableOpacity
+        style={[globalStyles.primaryButton, { marginBottom: 16, backgroundColor: "#FFD700" }]}
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate("Succès")}
+      >
+        <Text style={[globalStyles.primaryButtonText, { color: "#000" }]}>
+          🏆 Voir mes succès
+        </Text>
+      </TouchableOpacity>
       <PersonalInfoSection
         name={name} setName={setName}
         height={height} setHeight={setHeight}

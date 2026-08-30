@@ -108,6 +108,11 @@ export default function ActivityScreen() {
     const item = activities.find((f) => f.id === editingId);
     if (!item) return;
 
+    if (editNameValue.trim() === "") {
+      Alert.alert("Champ manquant", "Le nom de l'activité est requis.");
+      return;
+    }
+
     const parsedDuration = parseFloat(editDurationValue);
     if (isNaN(parsedDuration) || parsedDuration <= 0) {
       Alert.alert(

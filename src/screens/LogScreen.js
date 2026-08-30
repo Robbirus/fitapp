@@ -17,6 +17,8 @@ import {
 } from "react-native";
 import { getTodayISO, shiftDateISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { useContext } from "react";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 const MEAL_SECTIONS = [
   { key: "Petit Dejeuner", label: "Petit-déjeuner" },
@@ -38,6 +40,7 @@ export default function JournalScreen({ navigation }) {
   const [loading, setLoading] = useState("");
   const [selectedDate, setSelectedDate] = useState(getTodayISO());
   const today = getTodayISO();
+  const { showAchievement } = useContext(AchievementContext);
 
   const goToPreviousDay = () => {
     setSelectedDate((current) => shiftDateISO(current, -1));
@@ -99,18 +102,35 @@ export default function JournalScreen({ navigation }) {
   const saveEdit = async () => {
     const item = food.find((f) => f.id === editingId);
     if (!item) return;
+
+    const parsed = {
+      protein100g: parseFloat(editProtein),
+      carbs100g: parseFloat(editCarb),
+      fat100g: parseFloat(editFat),
+      fiber100g: parseFloat(editFiber),
+      quantityG: parseFloat(editQuantity),
+    };
+    const invalid = Object.entries(parsed).some(
+      ([key, value]) => isNaN(value) || (key === "quantityG" ? value <= 0 : value < 0),
+    );
+    if (invalid) {
+      Alert.alert(
+        "Valeur invalide",
+        "Chaque champ doit être un nombre valide (quantité > 0, macros ≥ 0).",
+      );
+      return;
+    }
+
     try {
       await updateDiaryEntry(db, editingId, {
         name: item.name,
         calories100g: item.calories_100g,
-        protein100g: parseFloat(editProtein),
-        carbs100g: parseFloat(editCarb),
-        fat100g: parseFloat(editFat),
-        fiber100g: parseFloat(editFiber),
-        quantityG: parseFloat(editQuantity),
+        ...parsed,
       });
     } catch (error) {
       console.log(error);
+      Alert.alert("Erreur", "Impossible d'enregistrer les modifications.");
+      return;
     }
     setEditingId(null);
     loadFoods();
@@ -136,7 +156,7 @@ export default function JournalScreen({ navigation }) {
 
   const duplicateItem = async (item) => {
     try {
-      await addDiaryEntry(
+      const result = await addDiaryEntry(
         db,
         {
           name: item.name,
@@ -145,11 +165,22 @@ export default function JournalScreen({ navigation }) {
           carbs100g: item.carbs_100g,
           fat100g: item.fat_100g,
           fiber100g: item.fiber_100g || 0,
-          quantityG: item.quantity_g,
+          quantityG: item.quantity_g,  
+          score: item.score,
+          scoreType: item.score_type,
+          nutriscoreGrade: item.nutriscore_grade,
+          isOrganic: item.is_organic === 1,
+          originCategory: item.origin_category,
         },
         today,
         item.meal_type,
       );
+
+      if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
+        result.newlyUnlockedAchievements.forEach((achievement) => {
+          showAchievement(achievement.title, achievement.description);
+        });
+      }
 
       if (selectedDate === today) {
         loadFoods();

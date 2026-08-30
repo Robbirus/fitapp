@@ -454,6 +454,10 @@ export default function BodyFatScreen({ navigation }) {
         </>
       )}
       <Text style={globalStyles.sectionTitle}>Mon historique</Text>
+      <Text style={[globalStyles.sectionSubtitle, { marginTop: -8 }]}>
+        Masse grasse recalculée pour chaque date ; le taux musculaire affiché
+        reste basé sur ton poids et ta masse musculaire actuels (non historisés).
+      </Text>
 
       <View style={globalStyles.optionsRow}>
         {PERIOD_OPTIONS.map((opt) => (
@@ -513,7 +517,7 @@ export default function BodyFatScreen({ navigation }) {
                 <View style={globalStyles.gridContainer}>
                   <View style={globalStyles.miniCard}>
                     <Text style={globalStyles.miniCardValue}>
-                      {itemBodyFat}%
+                      {itemBodyFat !== null ? itemBodyFat.toFixed(1) : "?"}%
                     </Text>
                     <Text style={globalStyles.miniCardTitle}>Masse grasse</Text>
                   </View>

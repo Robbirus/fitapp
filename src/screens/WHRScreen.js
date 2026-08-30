@@ -70,7 +70,7 @@ export default function WHRScreen({ navigation }) {
   const whtr = calculateWaistHeightRatio(waist, height);
   const whtrCategory = obtainWHtRCategory(whtr);
 
-  const whrCategory = obtainWHRCategory(waist / hip, gender);
+  const whrCategory = obtainWHRCategory(whr, gender);
   const whrZonesData = gender ? getWHRZones(gender) : null;
   const whtrZonesData = getWHtRZones();
   const bodyShapeInfo = obtainBodyShape(whrCategory);

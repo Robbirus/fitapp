@@ -25,7 +25,7 @@ import { globalStyles } from "../styles/GlobalStyles";
 import DonutRing from "../components/DonutRing";
 import Bar from "../components/Bar";
 
-export default function DashboardScreen() {
+export default function DashboardScreen({navigation}) {
   const db = useDatabase();
   const [settings, setSettings] = useState(null);
   const [calConsumed, setConsumed] = useState(0);
@@ -41,8 +41,7 @@ export default function DashboardScreen() {
   const [weekCalories, setWeekCalories] = useState([]);
   const [fiberConsumed, setFiberConsumed] = useState(0);
   const [fiberInput, setFiberInput] = useState("");
-
-  const today = getTodayISO();
+  const [today, setToday] = useState(getTodayISO());
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +70,9 @@ export default function DashboardScreen() {
   });
 
   const loadData = async () => {
+    const currentDate = getTodayISO();
+    setToday(currentDate);
+
     const s = await loadSettings(db);
     const since = getDateNDaysAgoISO(6); // 6 days back + today = 7 days
     const caloriesPerDay = await loadCaloriesPerDay(db, since);
@@ -82,7 +84,7 @@ export default function DashboardScreen() {
     setFatInput(s.fat_goal.toString());
     setFiberInput(s.fiber_goal.toString());
 
-    const foods = await loadDiaryEntries(db, today);
+    const foods = await loadDiaryEntries(db, currentDate);
     const totalConsumed = foods.reduce(
       (somme, item) => somme + (item.calories_100g * item.quantity_g) / 100,
       0,
@@ -113,7 +115,7 @@ export default function DashboardScreen() {
     );
     setFiberConsumed(Math.round(totalFiber * 10) / 10);
 
-    const activities = await loadActivities(db, today);
+    const activities = await loadActivities(db, currentDate);
     const totalBurned = activities.reduce(
       (somme, item) => somme + item.calories_burned,
       0,
@@ -129,6 +131,7 @@ export default function DashboardScreen() {
       carbsGoal: parseFloat(carbsInput),
       fatGoal: parseFloat(fatInput),
       fiberGoal: parseFloat(fiberInput),
+      waterGoal: settings.water_goal,
     });
     setEditing(false);
     loadData();
@@ -234,6 +237,16 @@ export default function DashboardScreen() {
           >
             <Text style={globalStyles.primaryButtonText}>
               Modifier mes objectifs
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { marginTop: 8, backgroundColor: "#FFD700" }]}
+            activeOpacity={0.6}
+            onPress={() => navigation.navigate("Succès")}
+          >
+            <Text style={[globalStyles.primaryButtonText, { color: "#000" }]}>
+              🏆 Voir mes succès
             </Text>
           </TouchableOpacity>
         </View>

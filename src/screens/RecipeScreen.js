@@ -95,6 +95,20 @@ export default function RecipesScreen({ navigation }) {
                   {recipe.ingredient_count > 1 ? "s" : ""} ·{" "}
                   {Math.round(recipe.total_calories)} kcal au total
                 </Text>
+                <View style={{ flexDirection: "row", gap: 14, marginTop: -8, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 12, color: "#EF5350" }}>
+                    P {Math.round(recipe.total_protein)} g
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#FFA726" }}>
+                    G {Math.round(recipe.total_carbs)} g
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#42A5F5" }}>
+                    L {Math.round(recipe.total_fat)} g
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#8D6E63" }}>
+                    Fibres {Math.round(recipe.total_fiber)} g
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           );

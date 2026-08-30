@@ -5,6 +5,7 @@ import BMIScreen from "../screens/BMIScreen";
 import MeasurementScreen from "../screens/MeasurementScreen";
 import WHRScreen from "../screens/WHRScreen";
 import BodyFatScreen from "../screens/BodyFatScreen";
+import AchievementsScreen from "../screens/AchievementsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ export default function ProfileStacks() {
       <Stack.Screen name="Mesures" component={MeasurementScreen} />
       <Stack.Screen name="Ratio Taille" component={WHRScreen} />
       <Stack.Screen name="Composition Corporelle" component={BodyFatScreen} />
+      <Stack.Screen name="Succès" component={AchievementsScreen} />
     </Stack.Navigator>
   );
 }

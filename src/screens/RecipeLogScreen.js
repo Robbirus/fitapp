@@ -132,7 +132,7 @@ export default function RecipeLogScreen({ navigation, route }) {
       // Une seule ligne de journal, ramenée à des valeurs pour 100g à partir du
       // total réellement consommé -> reste compatible avec le modèle diary_entries
       // existant (addDiaryEntry, LogScreen, dupliquer/éditer une entrée...).
-      await addDiaryEntry(
+      const result = await addDiaryEntry(
         db,
         {
           name: recipeName,
@@ -154,7 +154,12 @@ export default function RecipeLogScreen({ navigation, route }) {
         getTodayISO(),
         selectedMeal,
       );
-      Alert.alert("Ajouté !", `${recipeName} a été ajouté au journal.`);
+      const unlocked = result?.newlyUnlockedAchievements || [];
+      if (unlocked.length > 0) {
+        Alert.alert("Succès débloqué ! 🏆", unlocked.map((a) => a.title).join("\n"));
+      } else {
+        Alert.alert("Ajouté !", `${recipeName} a été ajouté au journal.`);
+      }
       navigation.goBack();
     } catch (error) {
       console.log("ERROR adding recipe to journal:", error.message);
@@ -243,6 +248,20 @@ export default function RecipeLogScreen({ navigation, route }) {
           Total : {Math.round(totals.weight)} g ·{" "}
           {Math.round(totals.calories)} kcal
         </Text>
+        <View style={{ flexDirection: "row", gap: 14, marginTop: 6 }}>
+          <Text style={{ fontSize: 13, color: "#EF5350" }}>
+            Protéines {Math.round(totals.protein)} g
+          </Text>
+          <Text style={{ fontSize: 13, color: "#FFA726" }}>
+            Glucides {Math.round(totals.carbs)} g
+          </Text>
+          <Text style={{ fontSize: 13, color: "#42A5F5" }}>
+            Lipides {Math.round(totals.fat)} g
+          </Text>
+          <Text style={{ fontSize: 13, color: "#8D6E63" }}>
+            Fibres {Math.round(totals.fiber)} g
+          </Text>
+        </View>
       </View>
 
       <TouchableOpacity

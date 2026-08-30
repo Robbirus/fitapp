@@ -1,4 +1,5 @@
 import { computeWeightedScore } from "../utils/FoodScore";
+import { refreshAchievements, ACHIEVEMENT_DEFINITIONS } from "./Achievements";
 
 // --- Diary Entries ---
 export async function loadDiaryEntries(db, date) {
@@ -25,7 +26,7 @@ export async function loadRecentFoods(db, limit = 15) {
 }
 
 export async function addDiaryEntry(db, entry, date, mealType) {
-  return await db.runAsync(
+  const result = await db.runAsync(
     `INSERT INTO diary_entries
       (name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g, date, meal_type,
        score, score_type, nutriscore_grade, is_organic, origin_category)
@@ -51,6 +52,14 @@ export async function addDiaryEntry(db, entry, date, mealType) {
       entry.originCategory ?? null,
     ],
   );
+  // Recomputing achievement progress should never block or break the
+  // add-to-journal flow, even if it fails for some reason.
+  try {
+    result.newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return result;
 }
 
 export async function deleteDiaryEntry(db, id) {
@@ -58,6 +67,9 @@ export async function deleteDiaryEntry(db, id) {
 }
 
 export async function updateDiaryEntry(db, id, entry) {
+  // Score/scoreType/etc. are intentionally NOT touched here: editing quantities or
+  // macros on an existing entry shouldn't wipe out the Nutri-Score/additives/origin
+  // data that was captured when the item was first scanned or logged.
   return await db.runAsync(
     `UPDATE diary_entries
      SET name = ?, calories_100g = ?, protein_100g = ?, carbs_100g = ?, fat_100g = ?, fiber_100g = ?, quantity_g = ?
@@ -100,10 +112,16 @@ export async function loadLatestWeightWithDate(db) {
 }
 
 export async function addWeightEntry(db, value, date) {
-  return await db.runAsync(
+  const result = await db.runAsync(
     "INSERT INTO weight_entries (value, date) VALUES (?, ?)",
     [value, date],
   );
+  try {
+    result.newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return result;
 }
 
 export async function loadWeightHistorySince(db, sinceDate) {
@@ -168,9 +186,14 @@ export async function loadSettings(db) {
 }
 
 export async function updateSettings(db, settings) {
+  // BUG FIX: `water_goal ?? 2.0` used to silently reset the water goal to the
+  // hardcoded default of 2.0L every time this was called without a waterGoal
+  // (e.g. from the Dashboard's quick goal editor, which doesn't have a water field).
+  // COALESCE keeps the existing stored value whenever the caller doesn't supply one.
   return await db.runAsync(
     `UPDATE settings 
-     SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ?, fiber_goal = ?, water_goal = ? 
+     SET calorie_goal = ?, protein_goal = ?, carbs_goal = ?, fat_goal = ?, fiber_goal = ?,
+         water_goal = COALESCE(?, water_goal)
      WHERE id = 1`,
     [
       settings.calorieGoal,
@@ -178,7 +201,7 @@ export async function updateSettings(db, settings) {
       settings.carbsGoal,
       settings.fatGoal,
       settings.fiberGoal,
-      settings.waterGoal ?? 2.0,
+      settings.waterGoal ?? null,
     ],
   );
 }
@@ -276,6 +299,10 @@ export async function loadRecipes(db) {
   return await db.getAllAsync(
     `SELECT r.id, r.name, r.created_at, r.score,
        COALESCE(SUM((ri.calories_100g * ri.quantity_g) / 100), 0) AS total_calories,
+       COALESCE(SUM((ri.protein_100g * ri.quantity_g) / 100), 0) AS total_protein,
+       COALESCE(SUM((ri.carbs_100g * ri.quantity_g) / 100), 0) AS total_carbs,
+       COALESCE(SUM((ri.fat_100g * ri.quantity_g) / 100), 0) AS total_fat,
+       COALESCE(SUM((ri.fiber_100g * ri.quantity_g) / 100), 0) AS total_fiber,
        COALESCE(SUM(ri.quantity_g), 0) AS total_weight_g,
        COUNT(ri.id) AS ingredient_count
      FROM recipes r
@@ -354,6 +381,11 @@ export async function createRecipe(db, name, ingredients) {
     await insertRecipeIngredients(db, recipeId, ingredients);
     await refreshRecipeScore(db, recipeId, ingredients);
   });
+  try {
+    await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
   return recipeId;
 }
 
@@ -378,4 +410,47 @@ export async function deleteRecipe(db, recipeId) {
     ]);
     await db.runAsync("DELETE FROM recipes WHERE id = ?", [recipeId]);
   });
+}
+
+export async function ensureAchievementsSeeded(db) {
+  for (const def of ACHIEVEMENT_DEFINITIONS) {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO achievements
+        (id, title, description, category, target_value, current_value, is_unlocked)
+       VALUES (?, ?, ?, ?, ?, 0, 0)`,
+      [def.id, def.title, def.description, def.category, def.target_value],
+    );
+  }
+}
+
+export async function loadAchievements(db) {
+  await ensureAchievementsSeeded(db);
+  return await db.getAllAsync(
+    "SELECT * FROM achievements ORDER BY category ASC, target_value ASC",
+  );
+}
+
+// Bumps one achievement's progress forward (never backward) and unlocks it the
+// first time it reaches its target. Returns true the moment it becomes unlocked.
+async function bumpAchievement(db, id, newValue) {
+  const row = await db.getFirstAsync(
+    "SELECT * FROM achievements WHERE id = ?",
+    [id],
+  );
+  if (!row) return false;
+
+  const value = Math.max(row.current_value, newValue);
+  const wasUnlocked = row.is_unlocked === 1;
+  const isUnlocked = wasUnlocked || value >= row.target_value;
+
+  await db.runAsync(
+    `UPDATE achievements SET current_value = ?, is_unlocked = ?, unlocked_at = ? WHERE id = ?`,
+    [
+      value,
+      isUnlocked ? 1 : 0,
+      isUnlocked ? (row.unlocked_at || new Date().toISOString()) : row.unlocked_at,
+      id,
+    ],
+  );
+  return isUnlocked && !wasUnlocked;
 }

@@ -264,6 +264,22 @@ export default function RecipeBuilderScreen({ navigation, route }) {
       sum + (ing.calories100g * (parseFloat(ing.quantityG) || 0)) / 100,
     0,
   );
+  const totalProtein = ingredients.reduce(
+    (sum, ing) => sum + (ing.protein100g * (parseFloat(ing.quantityG) || 0)) / 100,
+    0,
+  );
+  const totalCarbs = ingredients.reduce(
+    (sum, ing) => sum + (ing.carbs100g * (parseFloat(ing.quantityG) || 0)) / 100,
+    0,
+  );
+  const totalFat = ingredients.reduce(
+    (sum, ing) => sum + (ing.fat100g * (parseFloat(ing.quantityG) || 0)) / 100,
+    0,
+  );
+  const totalFiber = ingredients.reduce(
+    (sum, ing) => sum + ((ing.fiber100g || 0) * (parseFloat(ing.quantityG) || 0)) / 100,
+    0,
+  );
   const recipeScore = computeWeightedScore(
     ingredients.map((ing) => ({ score: ing.score, quantityG: parseFloat(ing.quantityG) || 0 })),
   );
@@ -550,7 +566,21 @@ export default function RecipeBuilderScreen({ navigation, route }) {
           <Text style={globalStyles.infoText}>
             Total recette : {Math.round(totalWeight)} g · {Math.round(totalCalories)} kcal
           </Text>
-          
+          <View style={{ flexDirection: "row", gap: 14, marginTop: 6 }}>
+            <Text style={{ fontSize: 13, color: "#EF5350" }}>
+              Protéines {Math.round(totalProtein)} g
+            </Text>
+            <Text style={{ fontSize: 13, color: "#FFA726" }}>
+              Glucides {Math.round(totalCarbs)} g
+            </Text>
+            <Text style={{ fontSize: 13, color: "#42A5F5" }}>
+              Lipides {Math.round(totalFat)} g
+            </Text>
+            <Text style={{ fontSize: 13, color: "#8D6E63" }}>
+              Fibres {Math.round(totalFiber)} g
+            </Text>
+          </View>
+
           {recipeScore !== null && (
             <View style={{ marginTop: 8 }}>
               <ScoreBadge 

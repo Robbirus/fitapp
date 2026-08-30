@@ -84,9 +84,13 @@ export default function WeightScreen({ navigation }) {
 
     const today = getTodayISO();
     try {
-      await addWeightEntry(db, parsedWeight, today);
+      const result = await addWeightEntry(db, parsedWeight, today);
       setWeight("");
       loadHistory(period);
+      const unlocked = result?.newlyUnlockedAchievements || [];
+      if (unlocked.length > 0) {
+        Alert.alert("Succès débloqué ! 🏆", unlocked.map((a) => a.title).join("\n"));
+      }
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'entrée de poids :", error);
       Alert.alert("Erreur", "Impossible d'enregistrer ce poids.");
@@ -117,7 +121,13 @@ export default function WeightScreen({ navigation }) {
   };
 
   const maxPoints = period === "week" ? 7 : period === "month" ? 30 : 52;
-  const recentHistory = history.slice(-maxPoints);
+  const recentHistory =
+    history.length <= maxPoints
+      ? history
+      : Array.from({ length: maxPoints }, (_, i) => {
+          const idx = Math.round((i * (history.length - 1)) / (maxPoints - 1));
+          return history[idx];
+        });
   const goalLine = profile
     ? recentHistory.map((item) =>
         calculateProjectedWeight({
