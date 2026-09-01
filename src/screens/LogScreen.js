@@ -4,6 +4,7 @@ import {
   deleteDiaryEntry,
   updateDiaryEntry,
   addDiaryEntry,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -122,11 +123,12 @@ export default function JournalScreen({ navigation }) {
     }
 
     try {
-      await updateDiaryEntry(db, editingId, {
+      const result = await updateDiaryEntry(db, editingId, {
         name: item.name,
         calories100g: item.calories_100g,
         ...parsed,
       });
+      notifyUnlockedAchievements(result, showAchievement);
     } catch (error) {
       console.log(error);
       Alert.alert("Erreur", "Impossible d'enregistrer les modifications.");
@@ -146,7 +148,11 @@ export default function JournalScreen({ navigation }) {
           text: "Supprimer",
           style: "destructive",
           onPress: async () => {
-            await deleteDiaryEntry(db, id);
+            // deleteDiaryEntry peut débloquer "le_deni" (suppression rapide) ou
+            // "grand_nettoyage" (10 suppressions en un jour) -- on remonte donc
+            // sa réponse au lieu de l'ignorer comme avant.
+            const result = await deleteDiaryEntry(db, id);
+            notifyUnlockedAchievements(result, showAchievement);
             loadFoods();
           },
         },
@@ -174,13 +180,10 @@ export default function JournalScreen({ navigation }) {
         },
         today,
         item.meal_type,
+        { isDuplicate: true },
       );
 
-      if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
-        result.newlyUnlockedAchievements.forEach((achievement) => {
-          showAchievement(achievement.title, achievement.description);
-        });
-      }
+      notifyUnlockedAchievements(result, showAchievement);
 
       if (selectedDate === today) {
         loadFoods();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Text,
   View,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useDatabase } from "../db/DatabaseContext";
-import { addDiaryEntry, loadRecentFoods, loadProfileSettings } from "../db/Queries";
+import { addDiaryEntry, loadRecentFoods, loadProfileSettings, notifyUnlockedAchievements } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 import {
@@ -25,9 +25,11 @@ import {
   getScoreBand,
 } from "../utils/FoodScore";
 import ScoreBadge from "../components/ScoreBadge";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 export default function ScannerScreen({ navigation }) {
   const db = useDatabase();
+  const { showAchievement } = useContext(AchievementContext);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -283,7 +285,7 @@ export default function ScannerScreen({ navigation }) {
     const scoreResult = getCurrentScore();
 
     try {
-      await addDiaryEntry(
+      const result = await addDiaryEntry(
         db,
         {
           name: name.trim(),
@@ -302,7 +304,12 @@ export default function ScannerScreen({ navigation }) {
         today,
         selectedMeal,
       );
-      Alert.alert("Ajouté !", `${name} a été ajouté au journal.`);
+      // BUG FIX: le résultat (et donc les succès potentiellement débloqués comme
+      // "photosynthese" ou "premier_classe") était auparavant ignoré ici.
+      const unlocked = notifyUnlockedAchievements(result, showAchievement);
+      if (unlocked.length === 0) {
+        Alert.alert("Ajouté !", `${name} a été ajouté au journal.`);
+      }
       resetScan();
       navigation.goBack();
     } catch (error) {

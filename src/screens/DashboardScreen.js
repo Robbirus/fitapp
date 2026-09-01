@@ -24,6 +24,7 @@ import {
 import { globalStyles } from "../styles/GlobalStyles";
 import DonutRing from "../components/DonutRing";
 import Bar from "../components/Bar";
+import { exportDatabase, importDatabase } from '../services/BackupService';
 
 export default function DashboardScreen({navigation}) {
   const db = useDatabase();
@@ -142,6 +143,24 @@ export default function DashboardScreen({navigation}) {
   const calRemaining = settings.calorie_goal - calConsumed + calBurned;
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+        <TouchableOpacity
+          style={[globalStyles.primaryButton, { flex: 1, marginRight: 8, backgroundColor: "#607D8B" }]}
+          activeOpacity={0.6}
+          onPress={exportDatabase}
+        >
+          <Text style={globalStyles.primaryButtonText}>💾 Sauvegarder</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[globalStyles.primaryButton, { flex: 1, marginLeft: 8, backgroundColor: "#78909C" }]}
+          activeOpacity={0.6}
+          onPress={importDatabase}
+        >
+          <Text style={globalStyles.primaryButtonText}>📂 Restaurer</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={globalStyles.titre}>Aujourd'hui</Text>
       <Text
         style={[

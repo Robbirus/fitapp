@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useDatabase } from "../db/DatabaseContext";
 import {
@@ -7,6 +7,7 @@ import {
   loadProfileSettings,
   deleteWeightEntry,
   updateWeightEntry,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import { Dimensions } from "react-native";
 import { LineChart } from "react-native-chart-kit";
@@ -22,6 +23,7 @@ import {
 } from "react-native";
 import { calculateProjectedWeight } from "../utils/NutritionCalculator";
 import { globalStyles } from "../styles/GlobalStyles";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -40,6 +42,7 @@ export default function WeightScreen({ navigation }) {
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const { showAchievement } = useContext(AchievementContext);
 
   useFocusEffect(
     useCallback(() => {
@@ -87,10 +90,11 @@ export default function WeightScreen({ navigation }) {
       const result = await addWeightEntry(db, parsedWeight, today);
       setWeight("");
       loadHistory(period);
-      const unlocked = result?.newlyUnlockedAchievements || [];
-      if (unlocked.length > 0) {
-        Alert.alert("Succès débloqué ! 🏆", unlocked.map((a) => a.title).join("\n"));
-      }
+      // Standardized with the rest of the app: golden toast rather than an Alert
+      // blocking (previously only this screen and RecipeLogScreen used a
+      // Alert, LogScreen was already using toast -- three different behaviors
+      // for the same event).
+      notifyUnlockedAchievements(result, showAchievement);
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'entrée de poids :", error);
       Alert.alert("Erreur", "Impossible d'enregistrer ce poids.");

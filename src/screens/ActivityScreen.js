@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   Text,
@@ -14,9 +14,11 @@ import {
   addActivityEntry,
   deleteActivityEntry,
   updateActivityEntry,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 export default function ActivityScreen() {
   const db = useDatabase();
@@ -29,6 +31,7 @@ export default function ActivityScreen() {
   const [editNameValue, setEditNameValue] = useState("");
   const [editDurationValue, setEditDurationValue] = useState("");
   const [editCaloriesValue, setEditCaloriesValue] = useState("");
+  const { showAchievement } = useContext(AchievementContext);
 
   const today = getTodayISO();
 
@@ -65,13 +68,14 @@ export default function ActivityScreen() {
     }
 
     try {
-      await addActivityEntry(
+      const result = await addActivityEntry(
         db,
         name,
         parsedDuration,
         parsedCalories || 0,
         today,
       );
+      notifyUnlockedAchievements(result, showAchievement);
       setNames("");
       setDuration("");
       setCaloriesBurned("");

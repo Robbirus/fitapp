@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Text,
   View,
@@ -13,6 +13,7 @@ import {
   loadRecipeWithIngredients,
   addDiaryEntry,
   loadProfileSettings,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
@@ -23,11 +24,13 @@ import {
 } from "../utils/MealHelpers";
 import { computeWeightedScore, getScoreBand } from "../utils/FoodScore";
 import ScoreBadge from "../components/ScoreBadge";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 export default function RecipeLogScreen({ navigation, route }) {
   const db = useDatabase();
   const recipeId = route.params?.recipeId;
   const [loading, setLoading] = useState(true);
+  const { showAchievement } = useContext(AchievementContext);
   const [recipeName, setRecipeName] = useState("");
   const [ingredients, setIngredients] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(() =>
@@ -154,10 +157,8 @@ export default function RecipeLogScreen({ navigation, route }) {
         getTodayISO(),
         selectedMeal,
       );
-      const unlocked = result?.newlyUnlockedAchievements || [];
-      if (unlocked.length > 0) {
-        Alert.alert("Succès débloqué ! 🏆", unlocked.map((a) => a.title).join("\n"));
-      } else {
+      const unlocked = notifyUnlockedAchievements(result, showAchievement);
+      if (unlocked.length === 0) {
         Alert.alert("Ajouté !", `${recipeName} a été ajouté au journal.`);
       }
       navigation.goBack();

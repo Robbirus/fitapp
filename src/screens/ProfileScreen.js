@@ -4,13 +4,15 @@ import {
   updateProfileSettings,
   loadLatestWeight,
   updateSettings,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import { calculateGoals } from "../utils/NutritionCalculator";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { ScrollView, TouchableOpacity, Text } from "react-native";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 import PersonalInfoSection from "../components/profile/PersonalInfoSection";
 import GoalsSection from "../components/profile/GoalsSection";
@@ -21,6 +23,7 @@ export default function ProfileScreen({ navigation }) {
   const db = useDatabase();
   const [profile, setProfile] = useState(null);
   const [latestWeight, setLatestWeight] = useState(null);
+  const { showAchievement } = useContext(AchievementContext);
 
   // Informations personnelles
   const [name, setName] = useState("");
@@ -92,7 +95,8 @@ export default function ProfileScreen({ navigation }) {
       waterGoal: parseFloat(waterGoal),
     };
 
-    await updateProfileSettings(db, profileData);
+    const result = await updateProfileSettings(db, profileData);
+    notifyUnlockedAchievements(result, showAchievement);
 
     const goals = calculateGoals({ weight: latestWeight, ...profileData });
     await updateSettings(db, {

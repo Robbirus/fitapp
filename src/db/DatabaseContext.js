@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import * as SQLite from "expo-sqlite";
+import { ensureAchievementsSeeded } from "./Queries";
 
 const DatabaseContext = createContext(null);
 
@@ -117,6 +118,16 @@ export function DatabaseProvider({ children }) {
             is_unlocked INTEGER DEFAULT 0,
             unlocked_at TEXT
           );
+
+          -- Generic user action log, used only to calculate
+          -- certain successes that depend on a behavior (one-time action) rather
+          -- as well as the current state of the data (e.g. "duplicate a food 3 times").
+          CREATE TABLE IF NOT EXISTS achievement_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            payload TEXT,
+            created_at TEXT NOT NULL
+          );
         `);
 
         // Migration pour les installations déjà existantes
@@ -157,6 +168,32 @@ export function DatabaseProvider({ children }) {
             );
           } catch (e) { /* Column already exists */ }
         }
+
+        const timestampColumns = [
+          { table: "diary_entries", column: "created_at", type: "TEXT" },
+          { table: "diary_entries", column: "edit_count", type: "INTEGER DEFAULT 0" },
+          { table: "weight_entries", column: "created_at", type: "TEXT" },
+          { table: "activities", column: "created_at", type: "TEXT" },
+        ];
+        for (const { table, column, type } of timestampColumns) {
+          try {
+            await database.execAsync(
+              `ALTER TABLE ${table} ADD COLUMN ${column} ${type};`,
+            );
+          } catch (e) { /* Column already exists */ }
+        }
+
+        try {
+          await database.execAsync(`
+            UPDATE diary_entries SET created_at = date || 'T12:00:00.000Z' WHERE created_at IS NULL;
+            UPDATE weight_entries SET created_at = date || 'T12:00:00.000Z' WHERE created_at IS NULL;
+            UPDATE activities SET created_at = date || 'T12:00:00.000Z' WHERE created_at IS NULL;
+          `);
+        } catch (e) { console.log("Erreur backfill created_at:", e.message); }
+
+        try {
+          await ensureAchievementsSeeded(database);
+        } catch (e) { console.log("Erreur seed achievements:", e.message); }
 
         setDb(database);
         console.log("Base de données initialisée avec succès.");

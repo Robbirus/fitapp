@@ -9,11 +9,12 @@ import { globalStyles } from "../styles/GlobalStyles";
 const CATEGORY_LABELS = {
   streak: "Séries",
   nutrition: "Nutrition",
+  sport: "Sport",
   weight: "Poids",
   general: "Général",
 };
 
-const CATEGORY_ORDER = ["streak", "nutrition", "weight", "general"];
+const CATEGORY_ORDER = ["streak", "nutrition", "sport", "weight", "general"];
 
 function AchievementRow({ achievement }) {
   const unlocked = achievement.is_unlocked === 1;

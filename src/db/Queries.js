@@ -1,5 +1,18 @@
 import { computeWeightedScore } from "../utils/FoodScore";
-import { refreshAchievements, ACHIEVEMENT_DEFINITIONS } from "./Achievements";
+import { refreshAchievements, ACHIEVEMENT_DEFINITIONS, logAchievementEvent } from "./Achievements";
+
+// Point d'entrée unique pour afficher les succès nouvellement débloqués, quel
+// que soit l'écran d'où l'action provient. Utiliser cette fonction partout
+// plutôt que de laisser chaque écran gérer l'affichage à sa façon (toast, Alert,
+// ou rien du tout) évite les incohérences constatées précédemment.
+// `showAchievement` est la fonction exposée par AchievementContext.
+export function notifyUnlockedAchievements(result, showAchievement) {
+  const unlocked = result?.newlyUnlockedAchievements || [];
+  if (typeof showAchievement === "function") {
+    unlocked.forEach((achievement) => showAchievement(achievement.title, achievement.description));
+  }
+  return unlocked;
+}
 
 // --- Diary Entries ---
 export async function loadDiaryEntries(db, date) {
@@ -25,12 +38,18 @@ export async function loadRecentFoods(db, limit = 15) {
   );
 }
 
-export async function addDiaryEntry(db, entry, date, mealType) {
+// `options.isDuplicate` doit être passé à `true` uniquement par le bouton
+// "Dupliquer" du journal (LogScreen) -- c'est ce qui permet aux succès de
+// duplication (un_jour_sans_fin, duplication_rapide, copier_coller_pro) de
+// distinguer un vrai usage de la fonction Dupliquer d'un ajout normal via le
+// scanner ou une recette, qui appellent aussi cette même fonction.
+export async function addDiaryEntry(db, entry, date, mealType, options = {}) {
+  const nowIso = new Date().toISOString();
   const result = await db.runAsync(
     `INSERT INTO diary_entries
       (name, calories_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, quantity_g, date, meal_type,
-       score, score_type, nutriscore_grade, is_organic, origin_category)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       score, score_type, nutriscore_grade, is_organic, origin_category, created_at, edit_count)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
     [
       entry.name,
       entry.calories100g,
@@ -50,11 +69,15 @@ export async function addDiaryEntry(db, entry, date, mealType) {
           ? 1
           : 0,
       entry.originCategory ?? null,
+      nowIso,
     ],
   );
   // Recomputing achievement progress should never block or break the
   // add-to-journal flow, even if it fails for some reason.
   try {
+    if (options.isDuplicate) {
+      await logAchievementEvent(db, "duplicate", { name: entry.name, date });
+    }
     result.newlyUnlockedAchievements = await refreshAchievements(db);
   } catch (e) {
     console.log("ERROR refreshing achievements:", e.message);
@@ -63,16 +86,42 @@ export async function addDiaryEntry(db, entry, date, mealType) {
 }
 
 export async function deleteDiaryEntry(db, id) {
-  return await db.runAsync("DELETE FROM diary_entries WHERE id = ?", [id]);
+  const today = new Date().toISOString().slice(0, 10);
+  const result = { newlyUnlockedAchievements: [] };
+  try {
+    const entry = await db.getFirstAsync(
+      "SELECT created_at FROM diary_entries WHERE id = ?",
+      [id],
+    );
+    if (entry?.created_at) {
+      const elapsedMs = Date.now() - new Date(entry.created_at).getTime();
+      if (elapsedMs >= 0 && elapsedMs < 60 * 1000) {
+        await logAchievementEvent(db, "quick_delete", { id });
+      }
+    }
+    await logAchievementEvent(db, "delete_entry", { id, date: today });
+  } catch (e) {
+    console.log("ERROR logging delete achievement events:", e.message);
+  }
+
+  const runResult = await db.runAsync("DELETE FROM diary_entries WHERE id = ?", [id]);
+
+  try {
+    result.newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return { ...runResult, newlyUnlockedAchievements: result.newlyUnlockedAchievements };
 }
 
 export async function updateDiaryEntry(db, id, entry) {
   // Score/scoreType/etc. are intentionally NOT touched here: editing quantities or
   // macros on an existing entry shouldn't wipe out the Nutri-Score/additives/origin
   // data that was captured when the item was first scanned or logged.
-  return await db.runAsync(
+  const runResult = await db.runAsync(
     `UPDATE diary_entries
-     SET name = ?, calories_100g = ?, protein_100g = ?, carbs_100g = ?, fat_100g = ?, fiber_100g = ?, quantity_g = ?
+     SET name = ?, calories_100g = ?, protein_100g = ?, carbs_100g = ?, fat_100g = ?, fiber_100g = ?, quantity_g = ?,
+         edit_count = COALESCE(edit_count, 0) + 1
      WHERE id = ?`,
     [
       entry.name,
@@ -85,6 +134,13 @@ export async function updateDiaryEntry(db, id, entry) {
       id,
     ],
   );
+  let newlyUnlockedAchievements = [];
+  try {
+    newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return { ...runResult, newlyUnlockedAchievements };
 }
 
 export async function loadCaloriesPerDay(db, sinceDate) {
@@ -113,8 +169,8 @@ export async function loadLatestWeightWithDate(db) {
 
 export async function addWeightEntry(db, value, date) {
   const result = await db.runAsync(
-    "INSERT INTO weight_entries (value, date) VALUES (?, ?)",
-    [value, date],
+    "INSERT INTO weight_entries (value, date, created_at) VALUES (?, ?, ?)",
+    [value, date, new Date().toISOString()],
   );
   try {
     result.newlyUnlockedAchievements = await refreshAchievements(db);
@@ -157,10 +213,19 @@ export async function addActivityEntry(
   caloriesBurned,
   date,
 ) {
-  return await db.runAsync(
-    "INSERT INTO activities (name, duration, calories_burned, date) VALUES (?, ?, ?, ?)",
-    [name, duration, caloriesBurned, date],
+  const result = await db.runAsync(
+    "INSERT INTO activities (name, duration, calories_burned, date, created_at) VALUES (?, ?, ?, ?, ?)",
+    [name, duration, caloriesBurned, date, new Date().toISOString()],
   );
+  // BUG FIX: this never called refreshAchievements before, so flash_mcqueen,
+  // marathonien_dimanche, jour_jambes_oublie and equilibre_parfait could never
+  // unlock from adding an activity, even once their SQL logic existed.
+  try {
+    result.newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return result;
 }
 
 export async function deleteActivityEntry(db, id) {
@@ -212,7 +277,11 @@ export async function loadProfileSettings(db) {
 }
 
 export async function updateProfileSettings(db, profile) {
-  return await db.runAsync(
+  const previous = await db.getFirstAsync(
+    "SELECT activity_level, weight_goal, weight_goal_rate FROM profileSettings WHERE id = 1",
+  );
+
+  const runResult = await db.runAsync(
     `UPDATE profileSettings
      SET name = ?, height = ?, age = ?, gender = ?, activity_level = ?,
          weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?, ethnicity = ?,
@@ -234,6 +303,32 @@ export async function updateProfileSettings(db, profile) {
       profile.dietStyle,
     ],
   );
+
+  try {
+    if (previous?.activity_level === "active" && profile.activityLevel === "sedentary") {
+      await logAchievementEvent(db, "esquive", { from: previous.activity_level, to: profile.activityLevel });
+    }
+    // "surgery_visual": any change in weight or rhythm goal counts.
+    if (
+      previous &&
+      (previous.weight_goal !== profile.weightGoal || previous.weight_goal_rate !== profile.weightGoalRate)
+    ) {
+      await logAchievementEvent(db, "weight_goal_change", {
+        from: { goal: previous.weight_goal, rate: previous.weight_goal_rate },
+        to: { goal: profile.weightGoal, rate: profile.weightGoalRate },
+      });
+    }
+  } catch (e) {
+    console.log("ERROR logging profile achievement events:", e.message);
+  }
+
+  let newlyUnlockedAchievements = [];
+  try {
+    newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return { ...runResult, newlyUnlockedAchievements };
 }
 
 export async function loadLatestWeight(db) {
@@ -370,6 +465,10 @@ async function refreshRecipeScore(db, recipeId, ingredients) {
 
 // ingredients: [{ name, calories100g, protein100g, carbs100g, fat100g, fiber100g, quantityG,
 //                 score, scoreType, nutriscoreGrade, isOrganic, originCategory }, ...]
+// BUG FIX: this used to call refreshAchievements but discard its result, so a
+// recipe unlocking "alchimiste_fou" (15+ ingredients) could never notify the
+// user. Now returns { recipeId, newlyUnlockedAchievements } -- callers must
+// destructure instead of treating the return value as a bare id.
 export async function createRecipe(db, name, ingredients) {
   let recipeId;
   await db.withTransactionAsync(async () => {
@@ -381,12 +480,13 @@ export async function createRecipe(db, name, ingredients) {
     await insertRecipeIngredients(db, recipeId, ingredients);
     await refreshRecipeScore(db, recipeId, ingredients);
   });
+  let newlyUnlockedAchievements = [];
   try {
-    await refreshAchievements(db);
+    newlyUnlockedAchievements = await refreshAchievements(db);
   } catch (e) {
     console.log("ERROR refreshing achievements:", e.message);
   }
-  return recipeId;
+  return { recipeId, newlyUnlockedAchievements };
 }
 
 export async function updateRecipe(db, recipeId, name, ingredients) {
@@ -401,6 +501,21 @@ export async function updateRecipe(db, recipeId, name, ingredients) {
     await insertRecipeIngredients(db, recipeId, ingredients);
     await refreshRecipeScore(db, recipeId, ingredients);
   });
+  // BUG FIX: this never called refreshAchievements before, so editing a recipe
+  // up to 16+ ingredients could never unlock "alchimiste_fou".
+  let newlyUnlockedAchievements = [];
+  try {
+    newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return { newlyUnlockedAchievements };
+}
+
+// Called by RecipeBuilderScreen when the user leaves the editor without
+// have not entered anything (empty name, no ingredient) -- for "syndrome_page_blanche".
+export async function logRecipeEditorAbandoned(db) {
+  await logAchievementEvent(db, "recipe_editor_abandoned");
 }
 
 export async function deleteRecipe(db, recipeId) {
@@ -428,29 +543,4 @@ export async function loadAchievements(db) {
   return await db.getAllAsync(
     "SELECT * FROM achievements ORDER BY category ASC, target_value ASC",
   );
-}
-
-// Bumps one achievement's progress forward (never backward) and unlocks it the
-// first time it reaches its target. Returns true the moment it becomes unlocked.
-async function bumpAchievement(db, id, newValue) {
-  const row = await db.getFirstAsync(
-    "SELECT * FROM achievements WHERE id = ?",
-    [id],
-  );
-  if (!row) return false;
-
-  const value = Math.max(row.current_value, newValue);
-  const wasUnlocked = row.is_unlocked === 1;
-  const isUnlocked = wasUnlocked || value >= row.target_value;
-
-  await db.runAsync(
-    `UPDATE achievements SET current_value = ?, is_unlocked = ?, unlocked_at = ? WHERE id = ?`,
-    [
-      value,
-      isUnlocked ? 1 : 0,
-      isUnlocked ? (row.unlocked_at || new Date().toISOString()) : row.unlocked_at,
-      id,
-    ],
-  );
-  return isUnlocked && !wasUnlocked;
 }

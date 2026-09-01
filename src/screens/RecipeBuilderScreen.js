@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Text,
   View,
@@ -14,6 +14,8 @@ import {
   updateRecipe,
   loadRecipeWithIngredients,
   loadRecentFoods,
+  notifyUnlockedAchievements,
+  logRecipeEditorAbandoned,
 } from "../db/Queries";
 import { globalStyles } from "../styles/GlobalStyles";
 import {
@@ -23,11 +25,18 @@ import {
   getScoreBand,
 } from "../utils/FoodScore";
 import ScoreBadge from "../components/ScoreBadge";
+import { AchievementContext } from "../contexts/AchievementContext";
 
 export default function RecipeBuilderScreen({ navigation, route }) {
   const db = useDatabase();
   const recipeId = route.params?.recipeId ?? null;
   const isEditing = recipeId !== null;
+  const { showAchievement } = useContext(AchievementContext);
+  // Devient `true` dès qu'un nom ou un ingrédient est saisi -- sert à distinguer
+  // un abandon de l'éditeur "page blanche" (rien saisi) d'un simple retour après
+  // avoir déjà sauvegardé ou modifié quelque chose.
+  const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
 
   const [name, setName] = useState("");
   const [ingredients, setIngredients] = useState([]);
@@ -85,6 +94,28 @@ export default function RecipeBuilderScreen({ navigation, route }) {
     };
     load();
   }, [db, isEditing, recipeId]);
+
+  // "syndrome_page_blanche" : ouvrir l'éditeur (nouvelle recette, pas une édition),
+  // ne rien saisir, et repartir. On écoute `beforeRemove` plutôt qu'un simple
+  // bouton "Annuler" car le retour se fait le plus souvent via la flèche du header
+  // ou le geste de swipe-back, qu'on ne contrôle pas directement.
+  useEffect(() => {
+    if (isEditing) return; // n'a de sens que pour une nouvelle recette
+    const unsubscribe = navigation.addListener("beforeRemove", () => {
+      if (!hasUnsavedContent && !savedSuccessfully && db) {
+        logRecipeEditorAbandoned(db).catch((e) =>
+          console.log("ERROR logging recipe editor abandon:", e.message),
+        );
+      }
+    });
+    return unsubscribe;
+  }, [navigation, isEditing, hasUnsavedContent, savedSuccessfully, db]);
+
+  useEffect(() => {
+    if (name.trim() !== "" || ingredients.length > 0) {
+      setHasUnsavedContent(true);
+    }
+  }, [name, ingredients]);
 
   const addIngredient = (ing) => {
     setIngredients((prev) => [...prev, ing]);
@@ -312,11 +343,16 @@ export default function RecipeBuilderScreen({ navigation, route }) {
         ...ing,
         quantityG: parseFloat(ing.quantityG),
       }));
+      let result;
       if (isEditing) {
-        await updateRecipe(db, recipeId, name.trim(), payload);
+        result = await updateRecipe(db, recipeId, name.trim(), payload);
       } else {
-        await createRecipe(db, name.trim(), payload);
+        result = await createRecipe(db, name.trim(), payload);
       }
+      // BUG FIX: createRecipe/updateRecipe renvoient désormais les succès
+      // nouvellement débloqués (ex: "alchimiste_fou") au lieu de les jeter.
+      notifyUnlockedAchievements(result, showAchievement);
+      setSavedSuccessfully(true);
       navigation.goBack();
     } catch (error) {
       console.log("ERROR saving recipe:", error.message);

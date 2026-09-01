@@ -1,31 +1,46 @@
-import React, { createContext, useState, useRef } from 'react';
+import React, { createContext, useState, useRef, useEffect } from 'react';
 import { Animated, Text, StyleSheet } from 'react-native';
 
 export const AchievementContext = createContext();
 
 export function AchievementProvider({ children }) {
-  const [achievement, setAchievement] = useState(null);
-  const slideAnim = useRef(new Animated.Value(-150)).current; 
+  const [queue, setQueue] = useState([]);
+  const [current, setCurrent] = useState(null);
+  const slideAnim = useRef(new Animated.Value(-150)).current;
 
   const showAchievement = (title, description) => {
-    setAchievement({ title, description });
-    
-    // Séquence d'animation : descend, patiente 3s, remonte
+    setQueue((q) => [...q, { title, description }]);
+  };
+
+  useEffect(() => {
+    if (!current && queue.length > 0) {
+      setCurrent(queue[0]);
+      setQueue((q) => q.slice(1));
+    }
+  }, [queue, current]);
+
+  useEffect(() => {
+    if (!current) return;
+    let cancelled = false;
     Animated.sequence([
       Animated.timing(slideAnim, { toValue: 50, duration: 500, useNativeDriver: true }),
       Animated.delay(3000),
-      Animated.timing(slideAnim, { toValue: -150, duration: 500, useNativeDriver: true })
-    ]).start(() => setAchievement(null));
-  };
+      Animated.timing(slideAnim, { toValue: -150, duration: 500, useNativeDriver: true }),
+    ]).start(() => {
+      if (!cancelled) setCurrent(null);
+    });
+    return () => { cancelled = true; };
+  }, [current]);
+
 
   return (
     <AchievementContext.Provider value={{ showAchievement }}>
       {children}
-      {achievement && (
+      {current && (
         <Animated.View style={[styles.toast, { transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.title}>🏆 Succès Débloqué !</Text>
-          <Text style={styles.desc}>{achievement.title}</Text>
-          <Text style={styles.sub}>{achievement.description}</Text>
+          <Text style={styles.desc}>{current.title}</Text>
+          <Text style={styles.sub}>{current.description}</Text>
         </Animated.View>
       )}
     </AchievementContext.Provider>
