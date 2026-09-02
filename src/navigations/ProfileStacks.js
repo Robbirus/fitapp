@@ -6,6 +6,7 @@ import MeasurementScreen from "../screens/MeasurementScreen";
 import WHRScreen from "../screens/WHRScreen";
 import BodyFatScreen from "../screens/BodyFatScreen";
 import AchievementsScreen from "../screens/AchievementsScreen";
+import RemindersScreen from "../screens/RemindersScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,11 @@ export default function ProfileStacks() {
       <Stack.Screen name="Ratio Taille" component={WHRScreen} />
       <Stack.Screen name="Composition Corporelle" component={BodyFatScreen} />
       <Stack.Screen name="Succès" component={AchievementsScreen} />
+      <Stack.Screen
+        name="Rappels"
+        component={RemindersScreen}
+        options={{ title: "Rappels d'eau" }}
+      />
     </Stack.Navigator>
   );
 }

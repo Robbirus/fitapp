@@ -217,9 +217,7 @@ export async function addActivityEntry(
     "INSERT INTO activities (name, duration, calories_burned, date, created_at) VALUES (?, ?, ?, ?, ?)",
     [name, duration, caloriesBurned, date, new Date().toISOString()],
   );
-  // BUG FIX: this never called refreshAchievements before, so flash_mcqueen,
-  // marathonien_dimanche, jour_jambes_oublie and equilibre_parfait could never
-  // unlock from adding an activity, even once their SQL logic existed.
+  
   try {
     result.newlyUnlockedAchievements = await refreshAchievements(db);
   } catch (e) {
@@ -245,6 +243,73 @@ export async function updateActivityEntry(
     [name, duration, calories_burned, date, id],
   );
 }
+
+// --- WATER ---
+export async function addWaterEntry(db, amountMl, date) {
+  const result = await db.runAsync(
+    "INSERT INTO water_entries (amount_ml, date, created_at) VALUES (?, ?, ?)",
+    [amountMl, date, new Date().toISOString()],
+  );
+  try {
+    result.newlyUnlockedAchievements = await refreshAchievements(db);
+  } catch (e) {
+    console.log("ERROR refreshing achievements:", e.message);
+  }
+  return result;
+}
+
+export async function loadWaterTotalForDate(db, date) {
+  const row = await db.getFirstAsync(
+    "SELECT COALESCE(SUM(amount_ml), 0) as total FROM water_entries WHERE date = ?",
+    [date],
+  );
+  return row?.total || 0;
+}
+
+export async function loadWaterEntries(db, date) {
+  return await db.getAllAsync(
+    "SELECT * FROM water_entries WHERE date = ? ORDER BY id DESC",
+    [date],
+  );
+}
+
+export async function deleteWaterEntry(db, id) {
+  return await db.runAsync("DELETE FROM water_entries WHERE id = ?", [id]);
+}
+
+export async function loadWaterHistorySince(db, sinceDate) {
+  return await db.getAllAsync(
+    `SELECT date, SUM(amount_ml) as total_ml
+     FROM water_entries WHERE date >= ? GROUP BY date ORDER BY date ASC`,
+    [sinceDate],
+  );
+}
+
+export async function loadMacrosPerDay(db, sinceDate) {
+  return await db.getAllAsync(
+    `SELECT date,
+       SUM(protein_100g * quantity_g / 100.0) as protein,
+       SUM(carbs_100g * quantity_g / 100.0) as carbs,
+       SUM(fat_100g * quantity_g / 100.0) as fat
+     FROM diary_entries WHERE date >= ? GROUP BY date ORDER BY date ASC`,
+    [sinceDate],
+  );
+}
+
+export async function updateWaterReminderSettings(db, settings) {
+  return await db.runAsync(
+    `UPDATE profileSettings
+     SET water_reminder_enabled = ?, water_reminder_start = ?, water_reminder_end = ?, water_reminder_interval_hours = ?
+     WHERE id = 1`,
+    [
+      settings.enabled ? 1 : 0,
+      settings.start,
+      settings.end,
+      settings.intervalHours,
+    ],
+  );
+}
+
 // --- Settings ---
 export async function loadSettings(db) {
   return await db.getFirstAsync("SELECT * FROM settings WHERE id = 1");
@@ -308,7 +373,7 @@ export async function updateProfileSettings(db, profile) {
     if (previous?.activity_level === "active" && profile.activityLevel === "sedentary") {
       await logAchievementEvent(db, "esquive", { from: previous.activity_level, to: profile.activityLevel });
     }
-    // "surgery_visual": any change in weight or rhythm goal counts.
+    // "chirurgie_visuelle" : tout changement d'objectif de poids ou de rythme compte.
     if (
       previous &&
       (previous.weight_goal !== profile.weightGoal || previous.weight_goal_rate !== profile.weightGoalRate)
@@ -450,9 +515,6 @@ async function insertRecipeIngredients(db, recipeId, ingredients) {
   }
 }
 
-// Recomputes and persists the recipe's overall score (weighted average of its
-// ingredients' scores, weighted by quantity). Called after every insert/update
-// so the recipe list can display it without recalculating on every render.
 async function refreshRecipeScore(db, recipeId, ingredients) {
   const score = computeWeightedScore(
     ingredients.map((ing) => ({ score: ing.score, quantityG: ing.quantityG })),
@@ -463,12 +525,6 @@ async function refreshRecipeScore(db, recipeId, ingredients) {
   ]);
 }
 
-// ingredients: [{ name, calories100g, protein100g, carbs100g, fat100g, fiber100g, quantityG,
-//                 score, scoreType, nutriscoreGrade, isOrganic, originCategory }, ...]
-// BUG FIX: this used to call refreshAchievements but discard its result, so a
-// recipe unlocking "alchimiste_fou" (15+ ingredients) could never notify the
-// user. Now returns { recipeId, newlyUnlockedAchievements } -- callers must
-// destructure instead of treating the return value as a bare id.
 export async function createRecipe(db, name, ingredients) {
   let recipeId;
   await db.withTransactionAsync(async () => {
@@ -501,8 +557,7 @@ export async function updateRecipe(db, recipeId, name, ingredients) {
     await insertRecipeIngredients(db, recipeId, ingredients);
     await refreshRecipeScore(db, recipeId, ingredients);
   });
-  // BUG FIX: this never called refreshAchievements before, so editing a recipe
-  // up to 16+ ingredients could never unlock "alchimiste_fou".
+
   let newlyUnlockedAchievements = [];
   try {
     newlyUnlockedAchievements = await refreshAchievements(db);
@@ -512,8 +567,6 @@ export async function updateRecipe(db, recipeId, name, ingredients) {
   return { newlyUnlockedAchievements };
 }
 
-// Called by RecipeBuilderScreen when the user leaves the editor without
-// have not entered anything (empty name, no ingredient) -- for "syndrome_page_blanche".
 export async function logRecipeEditorAbandoned(db) {
   await logAchievementEvent(db, "recipe_editor_abandoned");
 }

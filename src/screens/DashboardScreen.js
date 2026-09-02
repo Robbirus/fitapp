@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   Text,
@@ -15,6 +15,9 @@ import {
   loadSettings,
   updateSettings,
   loadCaloriesPerDay,
+  addWaterEntry,
+  loadWaterTotalForDate,
+  notifyUnlockedAchievements,
 } from "../db/Queries";
 import {
   getTodayISO,
@@ -25,9 +28,11 @@ import { globalStyles } from "../styles/GlobalStyles";
 import DonutRing from "../components/DonutRing";
 import Bar from "../components/Bar";
 import { exportDatabase, importDatabase } from '../services/BackupService';
+import { AchievementContext } from "../contexts/AchievementContext";
 
 export default function DashboardScreen({navigation}) {
   const db = useDatabase();
+  const { showAchievement } = useContext(AchievementContext);
   const [settings, setSettings] = useState(null);
   const [calConsumed, setConsumed] = useState(0);
   const [proteinConsumed, setProtein] = useState(0);
@@ -43,6 +48,8 @@ export default function DashboardScreen({navigation}) {
   const [fiberConsumed, setFiberConsumed] = useState(0);
   const [fiberInput, setFiberInput] = useState("");
   const [today, setToday] = useState(getTodayISO());
+  const [waterConsumedMl, setWaterConsumedMl] = useState(0);
+  const [addingWater, setAddingWater] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -122,6 +129,23 @@ export default function DashboardScreen({navigation}) {
       0,
     );
     setBurned(Math.round(totalBurned));
+
+    const waterTotal = await loadWaterTotalForDate(db, currentDate);
+    setWaterConsumedMl(waterTotal);
+  };
+
+  const addWater = async (amountMl) => {
+    if (addingWater) return;
+    setAddingWater(true);
+    try {
+      const result = await addWaterEntry(db, amountMl, today);
+      setWaterConsumedMl((prev) => prev + amountMl);
+      notifyUnlockedAchievements(result, showAchievement);
+    } catch (error) {
+      console.log("ERROR adding water:", error.message);
+    } finally {
+      setAddingWater(false);
+    }
   };
 
   const saveGoal = async () => {
@@ -268,8 +292,54 @@ export default function DashboardScreen({navigation}) {
               🏆 Voir mes succès
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { marginTop: 8, backgroundColor: "#26A69A" }]}
+            activeOpacity={0.6}
+            onPress={() => navigation.navigate("Tendances")}
+          >
+            <Text style={globalStyles.primaryButtonText}>
+              📈 Voir mes tendances
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
+
+      <View style={[globalStyles.card, { marginBottom: 16 }]}>
+        <Text style={globalStyles.sectionTitle}>💧 Eau</Text>
+        <Text style={[globalStyles.sectionSubtitle, { marginBottom: 8 }]}>
+          {(waterConsumedMl / 1000).toFixed(2)} L / {settings.water_goal?.toFixed(1) ?? "?"} L
+        </Text>
+        <View style={globalStyles.progressBarBackground}>
+          <View
+            style={[
+              globalStyles.progressBarFill,
+              {
+                width: `${Math.min((waterConsumedMl / 1000) / (settings.water_goal || 1), 1) * 100}%`,
+                backgroundColor: "#2196F3",
+              },
+            ]}
+          />
+        </View>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { flex: 1, backgroundColor: "#42A5F5" }]}
+            activeOpacity={0.6}
+            onPress={() => addWater(250)}
+            disabled={addingWater}
+          >
+            <Text style={globalStyles.primaryButtonText}>+250 ml</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { flex: 1, backgroundColor: "#1E88E5" }]}
+            activeOpacity={0.6}
+            onPress={() => addWater(500)}
+            disabled={addingWater}
+          >
+            <Text style={globalStyles.primaryButtonText}>+500 ml</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={[globalStyles.card, { marginBottom: 16 }]}>
         <Text style={globalStyles.sectionTitle}>Macronutriments</Text>

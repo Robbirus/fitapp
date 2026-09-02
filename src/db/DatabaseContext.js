@@ -128,9 +128,15 @@ export function DatabaseProvider({ children }) {
             payload TEXT,
             created_at TEXT NOT NULL
           );
+
+          CREATE TABLE IF NOT EXISTS water_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount_ml REAL NOT NULL,
+            date TEXT NOT NULL,
+            created_at TEXT NOT NULL
+          );
         `);
 
-        // Migration pour les installations déjà existantes
         try {
           await database.execAsync(`ALTER TABLE profileSettings ADD COLUMN meal_times TEXT DEFAULT '{"breakfast":"08:00","lunch":"12:30","snack":"16:30","dinner":"20:00"}';`);
         } catch (e) { /* La colonne existe déjà */ }
@@ -146,6 +152,18 @@ export function DatabaseProvider({ children }) {
         try {
           await database.execAsync(`ALTER TABLE profileSettings ADD COLUMN diet_style TEXT NOT NULL DEFAULT 'balanced';`);
         } catch (e) { /* La colonne existe déjà */ }
+
+        const reminderColumns = [
+          { column: "water_reminder_enabled", type: "INTEGER DEFAULT 0" },
+          { column: "water_reminder_start", type: "TEXT DEFAULT '08:00'" },
+          { column: "water_reminder_end", type: "TEXT DEFAULT '20:00'" },
+          { column: "water_reminder_interval_hours", type: "REAL DEFAULT 2" },
+        ];
+        for (const { column, type } of reminderColumns) {
+          try {
+            await database.execAsync(`ALTER TABLE profileSettings ADD COLUMN ${column} ${type};`);
+          } catch (e) { /* La colonne existe déjà */ }
+        }
 
         // Food scoring feature -- migrations for pre-existing installs
         const scoreColumns = [

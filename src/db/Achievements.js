@@ -228,11 +228,11 @@ export const ACHIEVEMENT_DEFINITIONS = [
 ];
 
 // --- Journal d'événements --------------------------------------------------
-// Some successes involve a one-time action (duplicate, delete quickly,
-// abandon the recipe editor...) rather than on the current state of the data.
-// We track them in `achievement_events` at the time they occur, since
-// Queries.js, then we count them here. Never fail the calling action
-// if the log fails: this is never critical for the main flow.
+// Certains succès portent sur une action ponctuelle (dupliquer, supprimer vite,
+// abandonner l'éditeur de recette...) plutôt que sur l'état actuel des données.
+// On les trace dans `achievement_events` au moment où ils se produisent, depuis
+// Queries.js, puis on les compte ici. Ne jamais faire échouer l'action appelante
+// si le log échoue : ce n'est jamais critique pour le flux principal.
 export async function logAchievementEvent(db, eventType, payload = null) {
   try {
     await db.runAsync(
@@ -244,16 +244,16 @@ export async function logAchievementEvent(db, eventType, payload = null) {
   }
 }
 
-// Number of calendar days between two ISO dates 'YYYY-MM-DD' (b - a).
+// Nombre de jours calendaires entre deux dates ISO 'YYYY-MM-DD' (b - a).
 function daysBetween(dateA, dateB) {
   const a = new Date(`${dateA}T00:00:00`);
   const b = new Date(`${dateB}T00:00:00`);
   return Math.round((b - a) / 86400000);
 }
 
-// Longest series of consecutive days (date[i+1] = date[i] + 1 day) that
-// share exactly the same log "signature" (same food + quantities).
-// `rows` must be sorted by ascending date, with a `date` and `signature` field.
+// Plus longue série de jours consécutifs (date[i+1] = date[i] + 1 jour) qui
+// partagent exactement la même "signature" de journal (mêmes aliments + quantités).
+// `rows` doit être trié par date croissante, avec un champ `date` et `signature`.
 function longestIdenticalDayStreak(rows) {
   let best = 1;
   let current = 1;
@@ -293,8 +293,8 @@ export async function refreshAchievements(db) {
     let currentValue = 0;
 
     if (def.type === "sql") {
-      // Not currently used by any definition -- kept for compatibility
-      // future, but protected: without `def.sql`, we ignore rather than crash.
+      // Non utilisé actuellement par aucune définition -- gardé pour compatibilité
+      // future, mais protégé : sans `def.sql`, on ignore plutôt que de planter.
       if (def.sql) {
         const res = await db.getFirstAsync(def.sql);
         currentValue = res?.total ?? 0;
@@ -320,8 +320,8 @@ export async function refreshAchievements(db) {
         }
 
         case "monstre_cookies": {
-          // Requires created_at (added by migration) to verify the actual time,
-          // not just the type of meal.
+          // Nécessite created_at (ajouté par migration) pour vérifier l'heure réelle,
+          // pas seulement le type de repas.
           const res = await db.getFirstAsync(
             `SELECT COUNT(*) as total FROM diary_entries
              WHERE meal_type = 'Snack' AND created_at IS NOT NULL
@@ -385,12 +385,6 @@ export async function refreshAchievements(db) {
 
         // --- 📋 DUPLICATION -------------------------------------------------
         case "un_jour_sans_fin": {
-          // Simplification assumed: 5 consecutive days are detected, including the
-          // newspaper content (food + quantities) is strictly
-          // identical, which is the observable result of repeated use of
-          // "Duplicate -- we do not check that EVERY day has been produced via
-          // the Duplicate button itself (we couldn’t prove it afterwards)
-          // for days 2 through 5 without linking each row to the source event).
           const rows = await db.getAllAsync(
             `SELECT date, GROUP_CONCAT(item, '|') as signature FROM (
                SELECT date, name || ':' || quantity_g as item
@@ -432,8 +426,6 @@ export async function refreshAchievements(db) {
         }
 
         case "equilibre_parfait": {
-          // "Very caloric" is arbitrarily set at 300+ kcal actually
-          // consumed; "in the stride" at a 3-hour window after the meal.
           const CALORIC_THRESHOLD = 300;
           const WINDOW_MINUTES = 180;
           const foods = await db.getAllAsync(
@@ -482,12 +474,40 @@ export async function refreshAchievements(db) {
           break;
         }
 
-        case "chameau_repenti":
+        case "chameau_repenti": {
+          const settings = await db.getFirstAsync("SELECT water_goal FROM settings WHERE id = 1");
+          if (settings?.water_goal) {
+            const goalMl = settings.water_goal * 1000;
+            const hit = await db.getFirstAsync(
+              `SELECT COUNT(*) as total FROM (
+                 SELECT date, SUM(amount_ml) as total_ml FROM water_entries
+                 GROUP BY date HAVING total_ml >= ?
+               )`,
+              [goalMl * 2],
+            );
+            currentValue = (hit?.total || 0) > 0 ? 1 : 0;
+          }
+          break;
+        }
+
         case "hydratation_tactique": {
-          // Blocked: there is no water consumption tracking table
-          // (only one goal `water_goal`). These two successes require a
-          // water log feature that doesn’t yet exist in the app.
-          currentValue = 0;
+          const settings = await db.getFirstAsync("SELECT calorie_goal FROM settings WHERE id = 1");
+          if (settings?.calorie_goal) {
+            const goal = settings.calorie_goal;
+            const waterRows = await db.getAllAsync(
+              `SELECT date, created_at FROM water_entries WHERE created_at IS NOT NULL ORDER BY date ASC`
+            );
+            let found = false;
+            for (const w of waterRows) {
+              const consumed = await db.getFirstAsync(
+                `SELECT COALESCE(SUM(calories_100g * quantity_g / 100.0), 0) as total
+                 FROM diary_entries WHERE date = ? AND created_at IS NOT NULL AND created_at <= ?`,
+                [w.date, w.created_at],
+              );
+              if ((consumed?.total || 0) >= goal) { found = true; break; }
+            }
+            currentValue = found ? 1 : 0;
+          }
           break;
         }
 
@@ -529,8 +549,8 @@ export async function refreshAchievements(db) {
         }
 
         case "ascenseur_emotionnel": {
-          // We limit ourselves to the last 60 weighings to avoid a cost O(no.3)
-          // which would become sensitive on a very long weight history.
+          // On se limite aux 60 dernières pesées pour éviter un coût O(n^3)
+          // qui deviendrait sensible sur un historique de poids très long.
           const weights = await db.getAllAsync(
             `SELECT value, date FROM weight_entries ORDER BY date ASC`
           );
@@ -577,8 +597,8 @@ export async function refreshAchievements(db) {
           ])].sort();
           let found = false;
           for (let i = 1; i < allDates.length; i++) {
-            // >= 4 days difference = at least 3 full days without any activity,
-            // followed by a return (the next day in the list).
+            // >= 4 jours d'écart = au moins 3 jours pleins sans aucune activité,
+            // suivis d'un retour (le jour suivant dans la liste).
             if (daysBetween(allDates[i - 1], allDates[i]) >= 4) { found = true; break; }
           }
           currentValue = found ? 1 : 0;

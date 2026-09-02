@@ -149,6 +149,13 @@ export default function ProfileScreen({ navigation }) {
         waterGoal={waterGoal} setWaterGoal={setWaterGoal}
       />
 
+      <TouchableOpacity
+        style={[globalStyles.primaryButton, { backgroundColor: "#2196F3" }]}
+        onPress={() => navigation.navigate("Rappels")}
+      >
+        <Text style={globalStyles.primaryButtonText}>💧 Rappels d'eau</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={globalStyles.primaryButton} onPress={save}>
         <Text style={globalStyles.primaryButtonText}>Enregistrer et recalculer mes objectifs</Text>
       </TouchableOpacity>

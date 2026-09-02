@@ -16,6 +16,7 @@ import {
   loadRecentFoods,
   notifyUnlockedAchievements,
   logRecipeEditorAbandoned,
+  deleteRecipe,
 } from "../db/Queries";
 import { globalStyles } from "../styles/GlobalStyles";
 import {
@@ -166,6 +167,7 @@ export default function RecipeBuilderScreen({ navigation, route }) {
       );
       return;
     }
+
     const protein = parseFloat(mProtein) || 0;
     const fiber = parseFloat(mFiber) || 0;
     const fat = parseFloat(mFat) || 0;
@@ -667,6 +669,7 @@ export default function RecipeBuilderScreen({ navigation, route }) {
           {saving ? "Enregistrement..." : "Enregistrer la recette"}
         </Text>
       </TouchableOpacity>
+
     </ScrollView>
   );
 }

@@ -72,13 +72,23 @@ export default function RecipesScreen({ navigation }) {
             typeof recipe.score === "number" ? getScoreBand(recipe.score) : null;
           return (
             <View key={recipe.id} style={[globalStyles.card, { marginBottom: 12 }]}>
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("RecipeLog", { recipeId: recipe.id })
-                }
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() =>
+                    navigation.navigate("RecipeLog", { recipeId: recipe.id })
+                  }
+                >
                   <Text style={globalStyles.sectionTitle}>{recipe.name}</Text>
+                </TouchableOpacity>
+
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   {typeof recipe.score === "number" && (
                     <ScoreBadge 
                       scoreResult={{ 
@@ -88,8 +98,18 @@ export default function RecipesScreen({ navigation }) {
                       compact={true} 
                     />
                   )}
+                  <TouchableOpacity onPress={() => confirmDelete(recipe)}>
+                    <Text style={{ fontSize: 18 }}>🗑️</Text>
+                  </TouchableOpacity>
                 </View>
-                
+              </View>
+
+              {/* Le reste des détails de la carte */}
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("RecipeLog", { recipeId: recipe.id })
+                }
+              >
                 <Text style={globalStyles.sectionSubtitle}>
                   {recipe.ingredient_count} ingrédient
                   {recipe.ingredient_count > 1 ? "s" : ""} ·{" "}
