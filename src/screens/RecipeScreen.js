@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useDatabase } from "../db/DatabaseContext";
 import { loadRecipes, deleteRecipe } from "../db/Queries";
-import { globalStyles } from "../styles/GlobalStyles";
+import { globalStyles, MACRO_COLORS } from "../styles/GlobalStyles";
+import { journalStyles } from "../styles/LogStyle";
 import { getScoreBand } from "../utils/FoodScore";
 import ScoreBadge from "../components/ScoreBadge";
 
@@ -66,29 +67,19 @@ export default function RecipesScreen({ navigation }) {
         <Text style={globalStyles.primaryButtonText}>+ Nouvelle recette</Text>
       </TouchableOpacity>
 
-      <ScrollView style={{ marginTop: 10 }}>
+      <ScrollView style={journalStyles.recipeListWrapper}>
         {recipes.map((recipe) => {
           const band =
             typeof recipe.score === "number" ? getScoreBand(recipe.score) : null;
           return (
-            <View key={recipe.id} style={[globalStyles.card, { marginBottom: 12 }]}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+            <View key={recipe.id} style={[globalStyles.card, journalStyles.recipeCard]}>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("RecipeLog", { recipeId: recipe.id })
+                }
               >
-                <TouchableOpacity
-                  style={{ flex: 1 }}
-                  onPress={() =>
-                    navigation.navigate("RecipeLog", { recipeId: recipe.id })
-                  }
-                >
+                <View style={globalStyles.rowBetween}>
                   <Text style={globalStyles.sectionTitle}>{recipe.name}</Text>
-                </TouchableOpacity>
-
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   {typeof recipe.score === "number" && (
                     <ScoreBadge 
                       scoreResult={{ 
@@ -98,43 +89,61 @@ export default function RecipesScreen({ navigation }) {
                       compact={true} 
                     />
                   )}
-                  <TouchableOpacity onPress={() => confirmDelete(recipe)}>
-                    <Text style={{ fontSize: 18 }}>🗑️</Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
-
-              {/* Le reste des détails de la carte */}
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("RecipeLog", { recipeId: recipe.id })
-                }
-              >
+                
                 <Text style={globalStyles.sectionSubtitle}>
                   {recipe.ingredient_count} ingrédient
                   {recipe.ingredient_count > 1 ? "s" : ""} ·{" "}
                   {Math.round(recipe.total_calories)} kcal au total
                 </Text>
-                <View style={{ flexDirection: "row", gap: 14, marginTop: -8, marginBottom: 8 }}>
-                  <Text style={{ fontSize: 12, color: "#EF5350" }}>
+                <View style={journalStyles.recipeMacroRow}>
+                  <Text style={[journalStyles.recipeMacroText, { color: MACRO_COLORS.protein }]}>
                     P {Math.round(recipe.total_protein)} g
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#FFA726" }}>
+                  <Text style={[journalStyles.recipeMacroText, { color: MACRO_COLORS.carbs }]}>
                     G {Math.round(recipe.total_carbs)} g
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#42A5F5" }}>
+                  <Text style={[journalStyles.recipeMacroText, { color: MACRO_COLORS.fat }]}>
                     L {Math.round(recipe.total_fat)} g
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#8D6E63" }}>
+                  <Text style={[journalStyles.recipeMacroText, { color: MACRO_COLORS.fiber }]}>
                     Fibres {Math.round(recipe.total_fiber)} g
                   </Text>
                 </View>
               </TouchableOpacity>
+
+              <View style={journalStyles.recipeCardActionsRow}>
+                <TouchableOpacity
+                  style={[
+                    globalStyles.primaryButton,
+                    journalStyles.recipeCardActionButton,
+                    { backgroundColor: "#4CAF50" },
+                  ]}
+                  activeOpacity={0.6}
+                  onPress={() =>
+                    navigation.navigate("RecipeBuilder", { recipeId: recipe.id })
+                  }
+                >
+                  <Text style={globalStyles.primaryButtonText}>Modifier</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    globalStyles.primaryButton,
+                    journalStyles.recipeCardActionButton,
+                    { backgroundColor: "#e53935" },
+                  ]}
+                  activeOpacity={0.6}
+                  onPress={() => confirmDelete(recipe)}
+                >
+                  <Text style={globalStyles.primaryButtonText}>Supprimer</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         })}
         {!loading && recipes.length === 0 && (
-          <Text style={{ color: "#999", marginTop: 20, textAlign: "center" }}>
+          <Text style={journalStyles.emptyRecipesText}>
             Aucune recette pour l'instant. Crée ta première recette avec le
             bouton ci-dessus.
           </Text>

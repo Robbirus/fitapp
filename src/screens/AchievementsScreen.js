@@ -5,6 +5,7 @@ import { useDatabase } from "../db/DatabaseContext";
 import { loadAchievements } from "../db/Queries";
 import { refreshAchievements } from "../db/Achievements";
 import { globalStyles } from "../styles/GlobalStyles";
+import { dashboardStyles } from "../styles/DashboardStyle";
 
 const CATEGORY_LABELS = {
   streak: "Séries",
@@ -24,15 +25,16 @@ function AchievementRow({ achievement }) {
     <View
       style={[
         globalStyles.card,
-        { marginBottom: 10, opacity: unlocked ? 1 : 0.85 },
+        dashboardStyles.achievementCard,
+        { opacity: unlocked ? 1 : 0.85 },
       ]}
     >
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <View style={globalStyles.rowBetween}>
         <Text style={globalStyles.sectionTitle}>
           {unlocked ? "🏆 " : "🔒 "}
           {achievement.title}
         </Text>
-        <Text style={{ fontSize: 13, color: "#756D65" }}>
+        <Text style={dashboardStyles.achievementProgressText}>
           {Math.min(achievement.current_value, achievement.target_value)}/{achievement.target_value}
         </Text>
       </View>
@@ -51,7 +53,7 @@ function AchievementRow({ achievement }) {
       </View>
 
       {unlocked && achievement.unlocked_at && (
-        <Text style={{ fontSize: 11, color: "#8C837B" }}>
+        <Text style={dashboardStyles.achievementUnlockedDate}>
           Débloqué le{" "}
           {new Date(achievement.unlocked_at).toLocaleDateString("fr-FR")}
         </Text>
@@ -108,7 +110,7 @@ export default function AchievementsScreen() {
         const items = achievements.filter((a) => a.category === category);
         if (items.length === 0) return null;
         return (
-          <View key={category} style={{ marginBottom: 16 }}>
+          <View key={category} style={dashboardStyles.categorySection}>
             <Text style={globalStyles.subTitle}>{CATEGORY_LABELS[category] || category}</Text>
             {items.map((achievement) => (
               <AchievementRow key={achievement.id} achievement={achievement} />

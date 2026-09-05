@@ -14,6 +14,7 @@ import { useDatabase } from "../db/DatabaseContext";
 import { addDiaryEntry, loadRecentFoods, loadProfileSettings, notifyUnlockedAchievements } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { journalStyles } from "../styles/LogStyle";
 import {
   DEFAULT_MEAL_TIMES,
   MEAL_PERIOD,
@@ -27,8 +28,11 @@ import {
 import ScoreBadge from "../components/ScoreBadge";
 import { AchievementContext } from "../contexts/AchievementContext";
 
-export default function ScannerScreen({ navigation }) {
+export default function ScannerScreen({ navigation, route }) {
   const db = useDatabase();
+  // Quand on arrive ici depuis "+ un ingrédient" dans RecipeBuilderScreen, on ne
+  // touche pas au journal : on renvoie le produit scanné à l'écran de recette.
+  const recipeMode = route.params?.mode === "recipe";
   const { showAchievement } = useContext(AchievementContext);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
@@ -85,7 +89,7 @@ export default function ScannerScreen({ navigation }) {
   if (!permission.granted) {
     return (
       <View style={globalStyles.center}>
-        <Text style={globalStyles.message}>
+        <Text style={journalStyles.message}>
           L'accès à la caméra est nécessaire pour scanner un produit.
         </Text>
         <Button title="Autoriser la caméra" onPress={requestPermission} />
@@ -318,6 +322,50 @@ export default function ScannerScreen({ navigation }) {
     }
   };
 
+  const addToRecipe = () => {
+    if (name.trim() === "") {
+      Alert.alert("Champ manquant", "Le nom du produit est requis.");
+      return;
+    }
+
+    const parsedCalories = parseFloat(calories100g);
+    const parsedQuantity = parseFloat(quantity);
+
+    if (isNaN(parsedCalories) || parsedCalories < 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "Les calories doivent être un nombre positif.",
+      );
+      return;
+    }
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      Alert.alert(
+        "Valeur invalide",
+        "La quantité doit être un nombre supérieur à 0.",
+      );
+      return;
+    }
+
+    const scoreResult = getCurrentScore();
+
+    navigation.navigate("RecipeBuilder", {
+      newIngredientFromScanner: {
+        name: name.trim(),
+        calories100g: parsedCalories,
+        protein100g: parseFloat(protein100g) || 0,
+        carbs100g: parseFloat(carbs100g) || 0,
+        fat100g: parseFloat(fat100g) || 0,
+        fiber100g: parseFloat(fiber100g) || 0,
+        quantityG: quantity,
+        score: scoreResult.score,
+        scoreType: scoreResult.scoreType,
+        nutriscoreGrade: scoreResult.nutriscoreGrade,
+        isOrganic: scoreResult.isOrganic,
+        originCategory: scoreResult.originCategory,
+      },
+    });
+  };
+
   const resetScan = () => {
     setFound(false);
     setName("");
@@ -354,14 +402,14 @@ export default function ScannerScreen({ navigation }) {
 
   if (recentMode) {
     return (
-      <View style={{ flex: 1, padding: 20 }}>
+      <View style={journalStyles.pickerPanel}>
         <Text style={globalStyles.label}>Aliments récents :</Text>
 
         {loadingRecent && (
-          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" style={journalStyles.pickerLoadingIndicator} />
         )}
 
-        <ScrollView style={{ marginTop: 10 }}>
+        <ScrollView style={journalStyles.pickerResultsList}>
           {recentFoods.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -373,14 +421,14 @@ export default function ScannerScreen({ navigation }) {
             </TouchableOpacity>
           ))}
           {!loadingRecent && recentFoods.length === 0 && (
-            <Text style={{ color: "#999", marginTop: 10 }}>
+            <Text style={journalStyles.pickerEmptyText}>
               Aucun aliment loggé pour l'instant.
             </Text>
           )}
         </ScrollView>
 
         <TouchableOpacity
-          style={[globalStyles.primaryButton, { backgroundColor: "#e53935" }]}
+          style={[globalStyles.primaryButton, journalStyles.cancelButton]}
           activeOpacity={0.6}
           onPress={() => setRecentMode(false)}
         >
@@ -392,7 +440,7 @@ export default function ScannerScreen({ navigation }) {
 
   if (searchMode) {
     return (
-      <View style={{ flex: 1, padding: 20 }}>
+      <View style={journalStyles.pickerPanel}>
         <Text style={globalStyles.label}>Rechercher un produit :</Text>
         <TextInput
           style={globalStyles.input}
@@ -410,10 +458,10 @@ export default function ScannerScreen({ navigation }) {
         </TouchableOpacity>
 
         {searching && (
-          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" style={journalStyles.pickerLoadingIndicator} />
         )}
 
-        <ScrollView style={{ marginTop: 10 }}>
+        <ScrollView style={journalStyles.pickerResultsList}>
           {searchResults.map((product, index) => (
             <TouchableOpacity
               key={product.code || index}
@@ -428,14 +476,14 @@ export default function ScannerScreen({ navigation }) {
             </TouchableOpacity>
           ))}
           {!searching && searchResults.length === 0 && searchQuery !== "" && (
-            <Text style={{ color: "#999", marginTop: 10 }}>
+            <Text style={journalStyles.pickerEmptyText}>
               Aucun résultat, essaie une recherche différente.
             </Text>
           )}
         </ScrollView>
 
         <TouchableOpacity
-          style={[globalStyles.primaryButton, { backgroundColor: "#e53935" }]}
+          style={[globalStyles.primaryButton, journalStyles.cancelButton]}
           activeOpacity={0.6}
           onPress={() => {
             setSearchMode(false);
@@ -465,29 +513,33 @@ export default function ScannerScreen({ navigation }) {
               fat100g: parseFloat(fat100g) || 0,
             }}
           />
-          <Text style={globalStyles.label}>Repas :</Text>
-          <View style={globalStyles.optionsRow}>
-            {MEAL_PERIOD.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  globalStyles.option,
-                  selectedMeal === opt.value && globalStyles.optionSelected,
-                ]}
-                onPress={() => setSelectedMeal(opt.value)}
-              >
-                <Text
-                  style={
-                    selectedMeal === opt.value
-                      ? globalStyles.optionTextSelected
-                      : globalStyles.optionText
-                  }
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {!recipeMode && (
+            <>
+              <Text style={globalStyles.label}>Repas :</Text>
+              <View style={globalStyles.optionsRow}>
+                {MEAL_PERIOD.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      globalStyles.option,
+                      selectedMeal === opt.value && globalStyles.optionSelected,
+                    ]}
+                    onPress={() => setSelectedMeal(opt.value)}
+                  >
+                    <Text
+                      style={
+                        selectedMeal === opt.value
+                          ? globalStyles.optionTextSelected
+                          : globalStyles.optionText
+                      }
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
           <Text style={globalStyles.label}>Nom du produit :</Text>
           <TextInput
             style={globalStyles.input}
@@ -509,7 +561,7 @@ export default function ScannerScreen({ navigation }) {
           />
 
           {showMacros && (
-            <View style={globalStyles.macrosBox}>
+            <View style={journalStyles.macrosBox}>
               <Text style={globalStyles.label}>Protéines (g) :</Text>
               <TextInput
                 style={globalStyles.input}
@@ -541,7 +593,9 @@ export default function ScannerScreen({ navigation }) {
             </View>
           )}
 
-          <Text style={globalStyles.label}>Quantité consommée (g) :</Text>
+          <Text style={globalStyles.label}>
+            {recipeMode ? "Quantité dans la recette (g) :" : "Quantité consommée (g) :"}
+          </Text>
           <TextInput
             style={globalStyles.input}
             value={quantity}
@@ -550,8 +604,11 @@ export default function ScannerScreen({ navigation }) {
             placeholder="ex: 150"
           />
 
-          <Button title="Ajouter au journal" onPress={addToJournal} />
-          <View style={{ height: 10 }} />
+          <Button
+            title={recipeMode ? "Ajouter à la recette" : "Ajouter au journal"}
+            onPress={recipeMode ? addToRecipe : addToJournal}
+          />
+          <View style={journalStyles.buttonSpacer} />
           <Button
             title="Annuler / Scanner un autre produit"
             onPress={resetScan}
@@ -562,26 +619,18 @@ export default function ScannerScreen({ navigation }) {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={journalStyles.fullFlex}>
       <CameraView
-        style={{ flex: 1 }}
+        style={journalStyles.fullFlex}
         barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8"] }}
         onBarcodeScanned={handleScan}
       />
       {loading && (
-        <View style={globalStyles.overlay}>
+        <View style={journalStyles.overlay}>
           <ActivityIndicator size="large" color="#fff" />
         </View>
       )}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 30,
-          left: 0,
-          right: 0,
-          alignItems: "center",
-        }}
-      >
+      <View style={journalStyles.scannerActionsOverlay}>
         <TouchableOpacity
           style={globalStyles.primaryButton}
           activeOpacity={0.6}

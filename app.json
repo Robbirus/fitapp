@@ -2,16 +2,11 @@
   "expo": {
     "name": "MyFitnessApp",
     "slug": "fitapp",
+	"scheme":"fitapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/fitapp_icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -20,14 +15,36 @@
         "foregroundImage": "./assets/fitapp_adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.robbirus.fitapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autorise l'accès à l'appareil photo pour scanner les codes-barres des produits."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/fitapp_icon.png",
+          "color": "#0095ff"
+        }
+      ]
     ],
     "extra": {
       "eas": {

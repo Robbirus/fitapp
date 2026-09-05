@@ -103,13 +103,7 @@ export default function RemindersScreen() {
       </Text>
 
       <View style={[globalStyles.card, { marginBottom: 16 }]}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <View style={globalStyles.rowBetween}>
           <Text style={globalStyles.sectionTitle}>Activer les rappels</Text>
           <Switch value={enabled} onValueChange={setEnabled} />
         </View>

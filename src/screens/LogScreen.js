@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { getTodayISO, shiftDateISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { journalStyles } from "../styles/LogStyle";
 import { useContext } from "react";
 import { AchievementContext } from "../contexts/AchievementContext";
 
@@ -324,16 +325,9 @@ export default function JournalScreen({ navigation }) {
     <View style={globalStyles.container}>
       <Text style={globalStyles.titre}>Journal du {selectedDate}</Text>
       <Text style={globalStyles.total}>Total : {Math.round(total)} kcal</Text>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 24,
-        }}
-      >
-        <TouchableOpacity onPress={goToPreviousDay} style={{ padding: 8 }}>
-          <Text style={{ fontSize: 28 }}>◀</Text>
+      <View style={journalStyles.dateNavRow}>
+        <TouchableOpacity onPress={goToPreviousDay} style={journalStyles.dateNavButton}>
+          <Text style={journalStyles.dateNavArrow}>◀</Text>
         </TouchableOpacity>
 
         <Text style={globalStyles.subTitle}>
@@ -343,13 +337,13 @@ export default function JournalScreen({ navigation }) {
         <TouchableOpacity
           onPress={goToNextDay}
           disabled={selectedDate >= today}
-          style={{ padding: 8 }}
+          style={journalStyles.dateNavButton}
         >
           <Text
-            style={{
-              fontSize: 28,
-              color: selectedDate >= today ? "#ccc" : "#000",
-            }}
+            style={[
+              journalStyles.dateNavArrow,
+              { color: selectedDate >= today ? "#ccc" : "#000" },
+            ]}
           >
             ▶
           </Text>
@@ -359,14 +353,8 @@ export default function JournalScreen({ navigation }) {
         {MEAL_SECTIONS.map((section) => {
           const items = mealGroups[section.key];
           return (
-            <View key={section.key} style={{ marginBottom: 20 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 8,
-                }}
-              >
+            <View key={section.key} style={journalStyles.mealSection}>
+              <View style={journalStyles.mealSectionHeader}>
                 <Text style={globalStyles.subTitle}>{section.label}</Text>
                 <Text style={globalStyles.subTitle}>
                   {Math.round(mealSubtotal(items))} kcal
@@ -374,7 +362,7 @@ export default function JournalScreen({ navigation }) {
               </View>
 
               {items.length === 0 ? (
-                <Text style={{ color: "#999" }}>Aucun aliment ajouté</Text>
+                <Text style={journalStyles.emptyMealText}>Aucun aliment ajouté</Text>
               ) : (
                 items.map((item) => renderFoodItem(item))
               )}

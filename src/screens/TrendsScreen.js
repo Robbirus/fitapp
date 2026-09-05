@@ -11,6 +11,7 @@ import {
 } from "../db/Queries";
 import { getDateNDaysAgoISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
+import { dashboardStyles } from "../styles/DashboardStyle";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -107,7 +108,7 @@ export default function TrendsScreen() {
             Aucune entrée de poids sur cette période.
           </Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator style={{ marginTop: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator style={dashboardStyles.chartScrollWrapper}>
             <LineChart
               data={{
                 labels: labelsFor(recentWeights),
@@ -129,7 +130,7 @@ export default function TrendsScreen() {
             Aucune entrée au journal sur cette période.
           </Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator style={{ marginTop: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator style={dashboardStyles.chartScrollWrapper}>
             <LineChart
               data={{
                 labels: labelsFor(recentCalories),
@@ -162,7 +163,7 @@ export default function TrendsScreen() {
             Aucune entrée au journal sur cette période.
           </Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator style={{ marginTop: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator style={dashboardStyles.chartScrollWrapper}>
             <LineChart
               data={{
                 labels: labelsFor(recentMacros),

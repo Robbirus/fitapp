@@ -1,5 +1,12 @@
 import { StyleSheet } from "react-native";
 
+export const MACRO_COLORS = {
+  protein: "#EF5350",
+  carbs: "#FFA726",
+  fat: "#42A5F5",
+  fiber: "#8D6E63",
+};
+
 export const globalStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20, paddingTop: 60 },
   center: {
@@ -58,18 +65,6 @@ export const globalStyles = StyleSheet.create({
     color: "#856404",
     fontSize: 14,
   },
-  warningBanner: {
-    backgroundColor: "#FFF3CD",
-    borderColor: "#FFEEBA",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginVertical: 10,
-  },
-  warningText: {
-    color: "#856404",
-    fontSize: 14,
-  },
   liste: { flex: 1 },
   ligne: {
     flexDirection: "row",
@@ -84,28 +79,12 @@ export const globalStyles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 5,
   },
-
-  message: { textAlign: "center", marginBottom: 20, fontSize: 16 },
-  macrosBox: { width: "100%", marginTop: 10 },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-
-  editBox: { marginBottom: 15 },
-  goalRow: {
+  rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
   },
-  goalText: { fontSize: 16 },
+
   progressBarBackground: {
     height: 20,
     backgroundColor: "#eee",
@@ -114,10 +93,6 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 20,
   },
   progressBarFill: { height: "100%", backgroundColor: "#4CAF50" },
-  statsRow: { flexDirection: "row", justifyContent: "space-around" },
-  statBox: { alignItems: "center" },
-  statValue: { fontSize: 20, fontWeight: "bold" },
-  statLabel: { fontSize: 14, color: "#666" },
 
   weightInfo: {
     marginTop: 20,
@@ -148,7 +123,7 @@ export const globalStyles = StyleSheet.create({
   primaryButton: {
     backgroundColor: "#0095ff",
     paddingVertical: 12,
-    paddingHorizontal: 20, // <- ajouté
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: "center",
     marginVertical: 8,
@@ -165,43 +140,17 @@ export const globalStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EFECE6",
   },
-  mainTitle: {
-    textAlign: "center",
-    letterSpacing: 2,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#5A524C",
-    marginBottom: 8,
-  },
-  heroValue: {
-    fontSize: 64,
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "serif",
     fontWeight: "bold",
-    color: "#D96B27",
-    textAlign: "center",
-    lineHeight: 68,
+    color: "#1A1A1A",
   },
-  unitText: {
-    fontSize: 20,
-    color: "#6E655F",
-    textAlign: "center",
-  },
-  subUnitText: {
-    fontSize: 14,
-    color: "#8C837B",
-    textAlign: "center",
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "#756D65",
+    marginTop: 4,
     marginBottom: 16,
-  },
-  pillBadge: {
-    backgroundColor: "#DCEBFF",
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignSelf: "center",
-  },
-  pillBadgeText: {
-    color: "#0066FF",
-    fontWeight: "600",
-    fontSize: 14,
   },
   gridContainer: {
     flexDirection: "row",
@@ -230,107 +179,4 @@ export const globalStyles = StyleSheet.create({
     fontSize: 12,
     color: "#8C837B",
   },
-  miniCardSub: {
-    fontSize: 11,
-    color: "#8C837B",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: "serif",
-    fontWeight: "bold",
-    color: "#1A1A1A",
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: "#756D65",
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  comparisonRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  comparisonBox: {
-    flex: 1,
-    backgroundColor: "#F2EFEB",
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  compLabel: {
-    fontSize: 13,
-    color: "#6E655F",
-    marginBottom: 4,
-  },
-  compValue: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  compUnit: {
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  greenInsightText: {
-    color: "#00875A",
-    fontWeight: "600",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  riskAlertBox: {
-    backgroundColor: "#DDF7E8",
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
-  },
-  checkIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#A3EAD0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  riskAlertTitle: {
-    color: "#00875A",
-    fontWeight: "bold",
-    fontSize: 15,
-    marginBottom: 2,
-  },
-  riskAlertDescription: {
-    color: "#2C523C",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  footerNote: {
-    fontSize: 12,
-    color: "#5A524C",
-  },
-  scaleRow: {
-    backgroundColor: "#F7F5F0",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  activeScaleRow: {
-    backgroundColor: "#DCEBFF",
-    borderWidth: 2,
-    borderColor: "#0066FF",
-  },
-  scaleLabel: {
-    fontWeight: "600",
-    color: "#5A524C",
-  },
-  scaleValue: {
-    color: "#756D65",
-  },
-  riskAlertBoxDanger: { backgroundColor: "#FDE2E1" },
-  checkIconDanger: { backgroundColor: "#F5A3A0" },
-  riskAlertTitleDanger: { color: "#C62828" },
-  riskAlertDescriptionDanger: { color: "#7A2E27" },
 });

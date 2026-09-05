@@ -24,7 +24,8 @@ import {
   getDateNDaysAgoISO,
   formatFullDateFR,
 } from "../utils/DateHelpers";
-import { globalStyles } from "../styles/GlobalStyles";
+import { globalStyles, MACRO_COLORS } from "../styles/GlobalStyles";
+import { dashboardStyles } from "../styles/DashboardStyle";
 import DonutRing from "../components/DonutRing";
 import Bar from "../components/Bar";
 import { exportDatabase, importDatabase } from '../services/BackupService';
@@ -72,7 +73,7 @@ export default function DashboardScreen({navigation}) {
       label: date.slice(5),
       value,
       topLabelComponent: () => (
-        <Text style={{ fontSize: 10, color: "#555" }}>{formatKcal(value)}</Text>
+        <Text style={dashboardStyles.barChartTopLabel}>{formatKcal(value)}</Text>
       ),
     };
   });
@@ -168,9 +169,9 @@ export default function DashboardScreen({navigation}) {
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+      <View style={dashboardStyles.backupRestoreRow}>
         <TouchableOpacity
-          style={[globalStyles.primaryButton, { flex: 1, marginRight: 8, backgroundColor: "#607D8B" }]}
+          style={[globalStyles.primaryButton, dashboardStyles.backupButton]}
           activeOpacity={0.6}
           onPress={exportDatabase}
         >
@@ -178,7 +179,7 @@ export default function DashboardScreen({navigation}) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[globalStyles.primaryButton, { flex: 1, marginLeft: 8, backgroundColor: "#78909C" }]}
+          style={[globalStyles.primaryButton, dashboardStyles.restoreButton]}
           activeOpacity={0.6}
           onPress={importDatabase}
         >
@@ -250,7 +251,7 @@ export default function DashboardScreen({navigation}) {
             Objectif : {settings.calorie_goal} kcal
           </Text>
 
-          <View style={{ alignItems: "center", marginVertical: 10 }}>
+          <View style={dashboardStyles.donutWrapper}>
             <DonutRing
               progress={Math.min(calConsumed / settings.calorie_goal, 1)}
               centerValue={calRemaining}
@@ -258,18 +259,18 @@ export default function DashboardScreen({navigation}) {
             />
           </View>
 
-          <View style={globalStyles.statsRow}>
-            <View style={globalStyles.statBox}>
-              <Text style={globalStyles.statValue}>{calConsumed}</Text>
-              <Text style={globalStyles.statLabel}>Consommé</Text>
+          <View style={dashboardStyles.statsRow}>
+            <View style={dashboardStyles.statBox}>
+              <Text style={dashboardStyles.statValue}>{calConsumed}</Text>
+              <Text style={dashboardStyles.statLabel}>Consommé</Text>
             </View>
-            <View style={globalStyles.statBox}>
-              <Text style={globalStyles.statValue}>{calBurned}</Text>
-              <Text style={globalStyles.statLabel}>Brûlé</Text>
+            <View style={dashboardStyles.statBox}>
+              <Text style={dashboardStyles.statValue}>{calBurned}</Text>
+              <Text style={dashboardStyles.statLabel}>Brûlé</Text>
             </View>
-            <View style={globalStyles.statBox}>
-              <Text style={globalStyles.statValue}>{calRemaining}</Text>
-              <Text style={globalStyles.statLabel}>Restant</Text>
+            <View style={dashboardStyles.statBox}>
+              <Text style={dashboardStyles.statValue}>{calRemaining}</Text>
+              <Text style={dashboardStyles.statLabel}>Restant</Text>
             </View>
           </View>
 
@@ -321,9 +322,9 @@ export default function DashboardScreen({navigation}) {
             ]}
           />
         </View>
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+        <View style={dashboardStyles.waterButtonsRow}>
           <TouchableOpacity
-            style={[globalStyles.primaryButton, { flex: 1, backgroundColor: "#42A5F5" }]}
+            style={[globalStyles.primaryButton, { flex: 1 }, dashboardStyles.waterButtonLight]}
             activeOpacity={0.6}
             onPress={() => addWater(250)}
             disabled={addingWater}
@@ -331,7 +332,7 @@ export default function DashboardScreen({navigation}) {
             <Text style={globalStyles.primaryButtonText}>+250 ml</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[globalStyles.primaryButton, { flex: 1, backgroundColor: "#1E88E5" }]}
+            style={[globalStyles.primaryButton, { flex: 1 }, dashboardStyles.waterButtonDark]}
             activeOpacity={0.6}
             onPress={() => addWater(500)}
             disabled={addingWater}
@@ -343,33 +344,33 @@ export default function DashboardScreen({navigation}) {
 
       <View style={[globalStyles.card, { marginBottom: 16 }]}>
         <Text style={globalStyles.sectionTitle}>Macronutriments</Text>
-        <View style={{ marginTop: 8 }}>
+        <View style={dashboardStyles.macrosListWrapper}>
           <Bar
             label="Protéines"
             consumed={proteinConsumed}
             goal={settings.protein_goal}
-            color="#EF5350"
+            color={MACRO_COLORS.protein}
             unit="g"
           />
           <Bar
             label="Glucides"
             consumed={carbsConsumed}
             goal={settings.carbs_goal}
-            color="#FFA726"
+            color={MACRO_COLORS.carbs}
             unit="g"
           />
           <Bar
             label="Lipides"
             consumed={fatConsumed}
             goal={settings.fat_goal}
-            color="#42A5F5"
+            color={MACRO_COLORS.fat}
             unit="g"
           />
           <Bar
             label="Fibres"
             consumed={fiberConsumed}
             goal={settings?.fiber_goal}
-            color="#8D6E63"
+            color={MACRO_COLORS.fiber}
             unit="g"
           />
         </View>
@@ -377,7 +378,7 @@ export default function DashboardScreen({navigation}) {
 
       <View style={globalStyles.card}>
         <Text style={globalStyles.sectionTitle}>7 derniers jours</Text>
-        <View style={{ marginTop: 12, alignItems: "center" }}>
+        <View style={dashboardStyles.weekChartWrapper}>
           <BarChart
             data={barData}
             width={280}

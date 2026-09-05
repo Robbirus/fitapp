@@ -1,10 +1,8 @@
 import { useDatabase } from "../db/DatabaseContext";
 import {
-  loadLatestWeight,
   loadProfileSettings,
   loadLatestBodyMeasurement,
   loadBodyMeasurementHistorySince,
-  updateBodyMeasurementEntry,
   loadLatestWeightWithDate,
   deleteBodyMeasurementEntry,
 } from "../db/Queries";
@@ -14,21 +12,17 @@ import {
   Text,
   Alert,
   View,
-  Button,
-  FlatList,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
 import { globalStyles } from "../styles/GlobalStyles";
+import { bodyCompositionStyles } from "../styles/BodyCompositionStyle";
 import {
   calculateBodyFatPercentage,
   calculateSMI,
   calculateSkeletalMuscleMass,
 } from "../utils/BodyCompositionCalculator";
-import { Dimensions } from "react-native";
 import {
-  calculateWaistHipRatio,
-  obtainWHRCategory,
   getSMIThreshold,
   obtainBodyFatCategory,
   obtainSMICategory,
@@ -38,13 +32,10 @@ import {
 } from "../utils/BodyCompositionCalculator";
 import Gauge from "../components/Gauge";
 import {
-  getTodayISO,
   getDateNDaysAgoISO,
   getDaysSince,
 } from "../utils/DateHelpers";
 import SegmentedDonut from "../components/SegmentedDonut";
-
-const screenWidth = Dimensions.get("window").width;
 
 const PERIOD_OPTIONS = [
   { value: "week", label: "Semaine" },
@@ -196,8 +187,8 @@ export default function BodyFatScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
       {isStale && (
-        <View style={globalStyles.warningBanner}>
-          <Text style={globalStyles.warningText}>
+        <View style={bodyCompositionStyles.warningBanner}>
+          <Text style={bodyCompositionStyles.warningText}>
             ⚠️ Ton dernier poids date de {daysOld} jours. Les résultats
             ci-dessous sont basés sur une valeur non à jour. Pèse-toi pour plus
             de précision.
@@ -219,20 +210,20 @@ export default function BodyFatScreen({ navigation }) {
             Indice de Masse Musculaire Squelettique (SMI)
           </Text>
           <View style={globalStyles.card}>
-            <Text style={globalStyles.mainTitle}>
+            <Text style={bodyCompositionStyles.mainTitle}>
               VOTRE MASSE MUSCULAIRE SQUELETTIQUE
             </Text>
-            <Text style={globalStyles.heroValue}>{smm.toFixed(1)}</Text>
-            <Text style={globalStyles.unitText}>kg</Text>
+            <Text style={bodyCompositionStyles.heroValue}>{smm.toFixed(1)}</Text>
+            <Text style={bodyCompositionStyles.unitText}>kg</Text>
             <View
               style={[
-                globalStyles.pillBadge,
+                bodyCompositionStyles.pillBadge,
                 { backgroundColor: getCategoryColors(smiCategory).bg },
               ]}
             >
               <Text
                 style={[
-                  globalStyles.pillBadgeText,
+                  bodyCompositionStyles.pillBadgeText,
                   { color: getCategoryColors(smiCategory).text },
                 ]}
               >
@@ -291,24 +282,24 @@ export default function BodyFatScreen({ navigation }) {
             {gender === 1 ? "hommes" : "femmes"}, Janssen et al. 2004)
           </Text>
 
-          <View style={globalStyles.comparisonRow}>
-            <View style={globalStyles.comparisonBox}>
-              <Text style={globalStyles.compLabel}>Ton SMI</Text>
-              <Text style={globalStyles.compValue}>
+          <View style={bodyCompositionStyles.comparisonRow}>
+            <View style={bodyCompositionStyles.comparisonBox}>
+              <Text style={bodyCompositionStyles.compLabel}>Ton SMI</Text>
+              <Text style={bodyCompositionStyles.compValue}>
                 {smi.toFixed(2)}{" "}
-                <Text style={globalStyles.compUnit}>kg/m²</Text>
+                <Text style={bodyCompositionStyles.compUnit}>kg/m²</Text>
               </Text>
             </View>
 
-            <View style={globalStyles.comparisonBox}>
-              <Text style={globalStyles.compLabel}>Moyenne de référence</Text>
-              <Text style={globalStyles.compValue}>
+            <View style={bodyCompositionStyles.comparisonBox}>
+              <Text style={bodyCompositionStyles.compLabel}>Moyenne de référence</Text>
+              <Text style={bodyCompositionStyles.compValue}>
                 {smiAverage.toFixed(2)}{" "}
-                <Text style={globalStyles.compUnit}>kg/m²</Text>
+                <Text style={bodyCompositionStyles.compUnit}>kg/m²</Text>
               </Text>
             </View>
           </View>
-          <Text style={globalStyles.greenInsightText}>
+          <Text style={bodyCompositionStyles.greenInsightText}>
             Ton SMI est {Math.abs(diff).toFixed(2)} kg/m²
             {diff >= 0 ? " au-dessus" : " en-dessous"} du milieu de la plage
             normale.
@@ -322,13 +313,13 @@ export default function BodyFatScreen({ navigation }) {
 
           <View
             style={[
-              globalStyles.riskAlertBox,
+              bodyCompositionStyles.riskAlertBox,
               { backgroundColor: getCategoryColors(sarcopeniaRisk).bg },
             ]}
           >
             <View
               style={[
-                globalStyles.checkIcon,
+                bodyCompositionStyles.checkIcon,
                 { backgroundColor: getCategoryColors(sarcopeniaRisk).bg },
               ]}
             >
@@ -337,10 +328,10 @@ export default function BodyFatScreen({ navigation }) {
               </Text>
             </View>
 
-            <View style={{ flex: 1 }}>
+            <View style={bodyCompositionStyles.riskAlertTextWrapper}>
               <Text
                 style={[
-                  globalStyles.riskAlertTitle,
+                  bodyCompositionStyles.riskAlertTitle,
                   { color: getCategoryColors(sarcopeniaRisk).text },
                 ]}
               >
@@ -348,7 +339,7 @@ export default function BodyFatScreen({ navigation }) {
               </Text>
               <Text
                 style={[
-                  globalStyles.riskAlertDescription,
+                  bodyCompositionStyles.riskAlertDescription,
                   { color: getCategoryColors(sarcopeniaRisk).text },
                 ]}
               >
@@ -358,7 +349,7 @@ export default function BodyFatScreen({ navigation }) {
               </Text>
             </View>
           </View>
-          <Text style={globalStyles.footerNote}>
+          <Text style={bodyCompositionStyles.footerNote}>
             Seuil bas SMI : {"<"} {smiThreshold.lowThreshold} kg/m² (basé sur
             Janssen et al., 2004)
           </Text>
@@ -372,36 +363,36 @@ export default function BodyFatScreen({ navigation }) {
 
           <View
             style={[
-              globalStyles.scaleRow,
-              smiCategory === "Faible" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              smiCategory === "Faible" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Faible</Text>
-            <Text style={globalStyles.scaleValue}>
+            <Text style={bodyCompositionStyles.scaleLabel}>Faible</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>
               {"<"} {smiThreshold.lowThreshold} kg/m²
             </Text>
           </View>
 
           <View
             style={[
-              globalStyles.scaleRow,
-              smiCategory === "Normal" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              smiCategory === "Normal" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Normal</Text>
-            <Text style={globalStyles.scaleValue}>
+            <Text style={bodyCompositionStyles.scaleLabel}>Normal</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>
               {smiThreshold.lowThreshold} - {smiThreshold.highThreshold} kg/m²
             </Text>
           </View>
 
           <View
             style={[
-              globalStyles.scaleRow,
-              smiCategory === "Élevé" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              smiCategory === "Élevé" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Élevé</Text>
-            <Text style={globalStyles.scaleValue}>
+            <Text style={bodyCompositionStyles.scaleLabel}>Élevé</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>
               {">"} {smiThreshold.highThreshold} kg/m²
             </Text>
           </View>
@@ -413,7 +404,7 @@ export default function BodyFatScreen({ navigation }) {
           <Text style={globalStyles.subTitle}>
             Estimation Composition Corporelle
           </Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={bodyCompositionStyles.donutRow}>
             <SegmentedDonut
               segments={donutSegments}
               strokeWidth={20}
@@ -421,30 +412,30 @@ export default function BodyFatScreen({ navigation }) {
             />
             <View>
               <View
-                style={[globalStyles.pillBadge, { backgroundColor: "#EBC375" }]}
+                style={[bodyCompositionStyles.pillBadge, { backgroundColor: "#EBC375" }]}
               >
                 <Text
-                  style={[globalStyles.pillBadgeText, { color: "#000000" }]}
+                  style={[bodyCompositionStyles.pillBadgeText, { color: "#000000" }]}
                 >
                   Graisse corporelle : {bodyFat.toFixed(2)} %
                 </Text>
               </View>
 
               <View
-                style={[globalStyles.pillBadge, { backgroundColor: "#ff6666" }]}
+                style={[bodyCompositionStyles.pillBadge, { backgroundColor: "#ff6666" }]}
               >
                 <Text
-                  style={[globalStyles.pillBadgeText, { color: "#000000" }]}
+                  style={[bodyCompositionStyles.pillBadgeText, { color: "#000000" }]}
                 >
                   Taux musculaire : {musclePercent.toFixed(2)} %
                 </Text>
               </View>
 
               <View
-                style={[globalStyles.pillBadge, { backgroundColor: "#c2e8ff" }]}
+                style={[bodyCompositionStyles.pillBadge, { backgroundColor: "#c2e8ff" }]}
               >
                 <Text
-                  style={[globalStyles.pillBadgeText, { color: "#000000" }]}
+                  style={[bodyCompositionStyles.pillBadgeText, { color: "#000000" }]}
                 >
                   Autre (Os, eau, organe) : {restPercent.toFixed(2)} %
                 </Text>
@@ -501,14 +492,8 @@ export default function BodyFatScreen({ navigation }) {
 
             return (
               <View key={item.id} style={globalStyles.card}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={globalStyles.scaleLabel}>{item.date}</Text>
+                <View style={globalStyles.rowBetween}>
+                  <Text style={bodyCompositionStyles.scaleLabel}>{item.date}</Text>
                   <TouchableOpacity onPress={() => confirmDelete(item.id)}>
                     <Text>🗑️</Text>
                   </TouchableOpacity>

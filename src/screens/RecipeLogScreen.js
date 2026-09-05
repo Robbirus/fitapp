@@ -16,7 +16,8 @@ import {
   notifyUnlockedAchievements,
 } from "../db/Queries";
 import { getTodayISO } from "../utils/DateHelpers";
-import { globalStyles } from "../styles/GlobalStyles";
+import { globalStyles, MACRO_COLORS } from "../styles/GlobalStyles";
+import { journalStyles } from "../styles/LogStyle";
 import {
   DEFAULT_MEAL_TIMES,
   MEAL_PERIOD,
@@ -183,7 +184,7 @@ export default function RecipeLogScreen({ navigation, route }) {
       <Text style={globalStyles.titre}>{recipeName}</Text>
 
             {dishScore !== null && (
-              <View style={{ alignItems: "center", marginBottom: 12 }}>
+              <View style={journalStyles.scoreBadgeWrapper}>
                 <ScoreBadge 
                   scoreResult={{
                     score: dishScore,
@@ -223,19 +224,19 @@ export default function RecipeLogScreen({ navigation, route }) {
         ))}
       </View>
 
-      <Text style={[globalStyles.label, { marginTop: 20 }]}>
+      <Text style={[globalStyles.label, journalStyles.labelSpaced]}>
         Ingrédients (ajuste les quantités si besoin) :
       </Text>
       {ingredients.map((ing, index) => (
-        <View key={index} style={[globalStyles.details, { marginBottom: 8 }]}>
-          <Text style={{ fontWeight: "bold" }}>{ing.name}</Text>
-          <Text style={{ color: "#666", marginBottom: 6 }}>
+        <View key={index} style={[globalStyles.details, journalStyles.ingredientCardSpacing]}>
+          <Text style={journalStyles.ingredientName}>{ing.name}</Text>
+          <Text style={journalStyles.ingredientCalories}>
             {Math.round(ing.calories100g)} kcal/100g
           </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={journalStyles.quantityRow}>
             <Text>Quantité (g) :</Text>
             <TextInput
-              style={[globalStyles.input, { flex: 1, marginBottom: 0 }]}
+              style={[globalStyles.input, journalStyles.quantityInput]}
               value={ing.quantityG}
               onChangeText={(value) => updateQuantity(index, value)}
               keyboardType="numeric"
@@ -244,22 +245,22 @@ export default function RecipeLogScreen({ navigation, route }) {
         </View>
       ))}
 
-      <View style={[globalStyles.infoBanner, { marginTop: 10 }]}>
+      <View style={[globalStyles.infoBanner, journalStyles.totalsBanner]}>
         <Text style={globalStyles.infoText}>
           Total : {Math.round(totals.weight)} g ·{" "}
           {Math.round(totals.calories)} kcal
         </Text>
-        <View style={{ flexDirection: "row", gap: 14, marginTop: 6 }}>
-          <Text style={{ fontSize: 13, color: "#EF5350" }}>
+        <View style={journalStyles.totalsMacroRow}>
+          <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.protein }]}>
             Protéines {Math.round(totals.protein)} g
           </Text>
-          <Text style={{ fontSize: 13, color: "#FFA726" }}>
+          <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.carbs }]}>
             Glucides {Math.round(totals.carbs)} g
           </Text>
-          <Text style={{ fontSize: 13, color: "#42A5F5" }}>
+          <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.fat }]}>
             Lipides {Math.round(totals.fat)} g
           </Text>
-          <Text style={{ fontSize: 13, color: "#8D6E63" }}>
+          <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.fiber }]}>
             Fibres {Math.round(totals.fiber)} g
           </Text>
         </View>

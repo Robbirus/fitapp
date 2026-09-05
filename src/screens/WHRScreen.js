@@ -2,8 +2,9 @@ import { useDatabase } from "../db/DatabaseContext";
 import { loadProfileSettings, loadLatestBodyMeasurement } from "../db/Queries";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { Text, View, Button, ScrollView } from "react-native";
+import { Text, View, ScrollView } from "react-native";
 import { globalStyles } from "../styles/GlobalStyles";
+import { bodyCompositionStyles } from "../styles/BodyCompositionStyle";
 import {
   calculateWaistHipRatio,
   obtainWHRCategory,
@@ -81,8 +82,8 @@ export default function WHRScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
       {isStale && (
-        <View style={globalStyles.warningBanner}>
-          <Text style={globalStyles.warningText}>
+        <View style={bodyCompositionStyles.warningBanner}>
+          <Text style={bodyCompositionStyles.warningText}>
             ⚠️ Tes dernières mesures date de {daysOld} jours. Les résultats
             ci-dessous sont basés sur une valeur non à jour. Mesures-toi pour
             plus de précision.
@@ -94,19 +95,19 @@ export default function WHRScreen({ navigation }) {
         <>
           <Text style={globalStyles.subTitle}>Rapport Taille-Hanche (RTH)</Text>
           <View style={globalStyles.card}>
-            <Text style={globalStyles.mainTitle}>
+            <Text style={bodyCompositionStyles.mainTitle}>
               VOTRE RATIO TAILLE-HANCHE
             </Text>
-            <Text style={globalStyles.heroValue}>{whr.toFixed(2)}</Text>
+            <Text style={bodyCompositionStyles.heroValue}>{whr.toFixed(2)}</Text>
             <View
               style={[
-                globalStyles.pillBadge,
+                bodyCompositionStyles.pillBadge,
                 { backgroundColor: getCategoryColors(whrCategory).bg },
               ]}
             >
               <Text
                 style={[
-                  globalStyles.pillBadgeText,
+                  bodyCompositionStyles.pillBadgeText,
                   { color: getCategoryColors(whrCategory).text },
                 ]}
               >
@@ -120,7 +121,7 @@ export default function WHRScreen({ navigation }) {
         <View style={globalStyles.miniCard}>
           <Text style={globalStyles.miniCardTitle}>Silhouette</Text>
           <Text style={globalStyles.miniCardValue}>{bodyShapeInfo.shape}</Text>
-          <Text style={globalStyles.footerNote}>
+          <Text style={bodyCompositionStyles.footerNote}>
             {bodyShapeInfo.description}
           </Text>
         </View>
@@ -152,76 +153,76 @@ export default function WHRScreen({ navigation }) {
         Classification du risque santé par genre
       </Text>
 
-      <Text style={globalStyles.scaleLabel}>Hommes</Text>
+      <Text style={bodyCompositionStyles.scaleLabel}>Hommes</Text>
 
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 1 &&
             whrCategory === "Risque faible" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Faible</Text>
-        <Text style={globalStyles.scaleValue}>{"<"} 0.90</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Faible</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{"<"} 0.90</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 1 &&
             whrCategory === "Risque modéré" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Modéré</Text>
-        <Text style={globalStyles.scaleValue}>0.90 - 0.99</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Modéré</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>0.90 - 0.99</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 1 &&
             whrCategory === "Risque élevé" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Élevé</Text>
-        <Text style={globalStyles.scaleValue}>{">="} 1.00</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Élevé</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{">="} 1.00</Text>
       </View>
 
-      <Text style={[globalStyles.scaleLabel, { marginTop: 12 }]}>Femmes</Text>
+      <Text style={[bodyCompositionStyles.scaleLabel, { marginTop: 12 }]}>Femmes</Text>
 
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 2 &&
             whrCategory === "Risque faible" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Faible</Text>
-        <Text style={globalStyles.scaleValue}>{"<"} 0.80</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Faible</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{"<"} 0.80</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 2 &&
             whrCategory === "Risque modéré" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Modéré</Text>
-        <Text style={globalStyles.scaleValue}>0.80 - 0.84</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Modéré</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>0.80 - 0.84</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
+          bodyCompositionStyles.scaleRow,
           gender === 2 &&
             whrCategory === "Risque élevé" &&
-            globalStyles.activeScaleRow,
+            bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Élevé</Text>
-        <Text style={globalStyles.scaleValue}>{">="} 0.85</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Élevé</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{">="} 0.85</Text>
       </View>
 
       {whtr !== null && (
@@ -230,19 +231,19 @@ export default function WHRScreen({ navigation }) {
             Rapport Taille-Taille (WHtR)
           </Text>
           <View style={globalStyles.card}>
-            <Text style={globalStyles.mainTitle}>
+            <Text style={bodyCompositionStyles.mainTitle}>
               VOTRE RATIO TAILLE-TAILLE
             </Text>
-            <Text style={globalStyles.heroValue}>{whtr.toFixed(2)}</Text>
+            <Text style={bodyCompositionStyles.heroValue}>{whtr.toFixed(2)}</Text>
             <View
               style={[
-                globalStyles.pillBadge,
+                bodyCompositionStyles.pillBadge,
                 { backgroundColor: getCategoryColors(whtrCategory).bg },
               ]}
             >
               <Text
                 style={[
-                  globalStyles.pillBadgeText,
+                  bodyCompositionStyles.pillBadgeText,
                   { color: getCategoryColors(whtrCategory).text },
                 ]}
               >
@@ -260,31 +261,31 @@ export default function WHRScreen({ navigation }) {
             />
           )}
 
-          <View style={globalStyles.comparisonRow}>
-            <View style={globalStyles.comparisonBox}>
-              <Text style={globalStyles.compLabel}>Seuil des 0.5</Text>
-              <Text style={globalStyles.compValue}>
+          <View style={bodyCompositionStyles.comparisonRow}>
+            <View style={bodyCompositionStyles.comparisonBox}>
+              <Text style={bodyCompositionStyles.compLabel}>Seuil des 0.5</Text>
+              <Text style={bodyCompositionStyles.compValue}>
                 {waistBoundary.toFixed(1)}{" "}
-                <Text style={globalStyles.compUnit}>cm</Text>
+                <Text style={bodyCompositionStyles.compUnit}>cm</Text>
               </Text>
-              <Text style={globalStyles.footerNote}>
+              <Text style={bodyCompositionStyles.footerNote}>
                 Ton tour de taille devrait être sous cette valeur pour un ratio
                 de 0.5
               </Text>
             </View>
 
-            <View style={globalStyles.comparisonBox}>
-              <Text style={globalStyles.compLabel}>Comparé au seuil sain</Text>
+            <View style={bodyCompositionStyles.comparisonBox}>
+              <Text style={bodyCompositionStyles.compLabel}>Comparé au seuil sain</Text>
               <Text
                 style={[
-                  globalStyles.compValue,
+                  bodyCompositionStyles.compValue,
                   { color: whtrDiffPercent >= 0 ? "#e53935" : "#00875A" },
                 ]}
               >
                 {whtrDiffPercent >= 0 ? "+" : ""}
                 {whtrDiffPercent.toFixed(0)}%
               </Text>
-              <Text style={globalStyles.footerNote}>
+              <Text style={bodyCompositionStyles.footerNote}>
                 {whtrDiffPercent >= 0 ? "Au-dessus" : "En dessous"} du seuil
                 critique de 0.5
               </Text>
@@ -294,14 +295,14 @@ export default function WHRScreen({ navigation }) {
           <Text style={globalStyles.sectionTitle}>Recommandations</Text>
           <View
             style={[
-              globalStyles.riskAlertBox,
+              bodyCompositionStyles.riskAlertBox,
               { backgroundColor: getCategoryColors(whtrCategory).bg },
             ]}
           >
-            <View style={{ flex: 1 }}>
+            <View style={bodyCompositionStyles.riskAlertTextWrapper}>
               <Text
                 style={[
-                  globalStyles.riskAlertDescription,
+                  bodyCompositionStyles.riskAlertDescription,
                   { color: getCategoryColors(whtrCategory).text },
                 ]}
               >
@@ -328,49 +329,49 @@ export default function WHRScreen({ navigation }) {
 
           <View
             style={[
-              globalStyles.scaleRow,
-              whtrCategory === "Mince" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              whtrCategory === "Mince" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Mince</Text>
-            <Text style={globalStyles.scaleValue}>{"<"} 0.40</Text>
+            <Text style={bodyCompositionStyles.scaleLabel}>Mince</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>{"<"} 0.40</Text>
           </View>
           <View
             style={[
-              globalStyles.scaleRow,
-              whtrCategory === "Sain" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              whtrCategory === "Sain" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Sain</Text>
-            <Text style={globalStyles.scaleValue}>0.40 - 0.49</Text>
+            <Text style={bodyCompositionStyles.scaleLabel}>Sain</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>0.40 - 0.49</Text>
           </View>
           <View
             style={[
-              globalStyles.scaleRow,
-              whtrCategory === "Surpoids" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              whtrCategory === "Surpoids" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Surpoids</Text>
-            <Text style={globalStyles.scaleValue}>0.50 - 0.53</Text>
+            <Text style={bodyCompositionStyles.scaleLabel}>Surpoids</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>0.50 - 0.53</Text>
           </View>
           <View
             style={[
-              globalStyles.scaleRow,
-              whtrCategory === "Risque élevé" && globalStyles.activeScaleRow,
+              bodyCompositionStyles.scaleRow,
+              whtrCategory === "Risque élevé" && bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Risque élevé</Text>
-            <Text style={globalStyles.scaleValue}>0.54 - 0.57</Text>
+            <Text style={bodyCompositionStyles.scaleLabel}>Risque élevé</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>0.54 - 0.57</Text>
           </View>
           <View
             style={[
-              globalStyles.scaleRow,
+              bodyCompositionStyles.scaleRow,
               whtrCategory === "Risque très élevé" &&
-                globalStyles.activeScaleRow,
+                bodyCompositionStyles.activeScaleRow,
             ]}
           >
-            <Text style={globalStyles.scaleLabel}>Risque très élevé</Text>
-            <Text style={globalStyles.scaleValue}>{">="} 0.58</Text>
+            <Text style={bodyCompositionStyles.scaleLabel}>Risque très élevé</Text>
+            <Text style={bodyCompositionStyles.scaleValue}>{">="} 0.58</Text>
           </View>
         </>
       )}

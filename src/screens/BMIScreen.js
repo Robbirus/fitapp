@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Text, View, ScrollView, TouchableOpacity } from "react-native";
 import { globalStyles } from "../styles/GlobalStyles";
+import { bodyCompositionStyles } from "../styles/BodyCompositionStyle";
 import {
   calculateBMI,
   obtainBMICategory,
@@ -67,8 +68,8 @@ export default function BMIScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
       {isStale && (
-        <View style={globalStyles.warningBanner}>
-          <Text style={globalStyles.warningText}>
+        <View style={bodyCompositionStyles.warningBanner}>
+          <Text style={bodyCompositionStyles.warningText}>
             ⚠️ Ton dernier poids date de {daysOld} jours. Les résultats
             ci-dessous sont basés sur une valeur non à jour. Pèse-toi pour plus
             de précision.
@@ -78,10 +79,10 @@ export default function BMIScreen({ navigation }) {
 
       <Text style={globalStyles.subTitle}>Indice de Masse Corporelle (IMC)</Text>
       <View style={globalStyles.card}>
-        <Text style={globalStyles.mainTitle}>VOTRE IMC</Text>
-        <Text style={globalStyles.heroValue}>{bmi.toFixed(1)}</Text>
-        <View style={[globalStyles.pillBadge, { backgroundColor: colors.bg }]}>
-          <Text style={[globalStyles.pillBadgeText, { color: colors.text }]}>
+        <Text style={bodyCompositionStyles.mainTitle}>VOTRE IMC</Text>
+        <Text style={bodyCompositionStyles.heroValue}>{bmi.toFixed(1)}</Text>
+        <View style={[bodyCompositionStyles.pillBadge, { backgroundColor: colors.bg }]}>
+          <Text style={[bodyCompositionStyles.pillBadgeText, { color: colors.text }]}>
             {category}
           </Text>
         </View>
@@ -117,46 +118,46 @@ export default function BMIScreen({ navigation }) {
 
       <View
         style={[
-          globalStyles.scaleRow,
-          category === "Insuffisance pondérale" && globalStyles.activeScaleRow,
+          bodyCompositionStyles.scaleRow,
+          category === "Insuffisance pondérale" && bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Insuffisance</Text>
-        <Text style={globalStyles.scaleValue}>{"<"} 18.5</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Insuffisance</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{"<"} 18.5</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
-          category === "Poids normal" && globalStyles.activeScaleRow,
+          bodyCompositionStyles.scaleRow,
+          category === "Poids normal" && bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Normal</Text>
-        <Text style={globalStyles.scaleValue}>18.5 - 24.9</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Normal</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>18.5 - 24.9</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
-          category === "Surpoids" && globalStyles.activeScaleRow,
+          bodyCompositionStyles.scaleRow,
+          category === "Surpoids" && bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Surpoids</Text>
-        <Text style={globalStyles.scaleValue}>25 - 29.9</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Surpoids</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>25 - 29.9</Text>
       </View>
       <View
         style={[
-          globalStyles.scaleRow,
-          category === "Obésité" && globalStyles.activeScaleRow,
+          bodyCompositionStyles.scaleRow,
+          category === "Obésité" && bodyCompositionStyles.activeScaleRow,
         ]}
       >
-        <Text style={globalStyles.scaleLabel}>Obésité</Text>
-        <Text style={globalStyles.scaleValue}>{">="} 30</Text>
+        <Text style={bodyCompositionStyles.scaleLabel}>Obésité</Text>
+        <Text style={bodyCompositionStyles.scaleValue}>{">="} 30</Text>
       </View>
 
       <Text style={globalStyles.sectionTitle}>Recommandation</Text>
-      <View style={[globalStyles.riskAlertBox, { backgroundColor: colors.bg }]}>
-        <View style={{ flex: 1 }}>
+      <View style={[bodyCompositionStyles.riskAlertBox, { backgroundColor: colors.bg }]}>
+        <View style={bodyCompositionStyles.riskAlertTextWrapper}>
           <Text
-            style={[globalStyles.riskAlertDescription, { color: colors.text }]}
+            style={[bodyCompositionStyles.riskAlertDescription, { color: colors.text }]}
           >
             {getBMIRecommendation(category)}
           </Text>

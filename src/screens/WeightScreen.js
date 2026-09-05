@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { calculateProjectedWeight } from "../utils/NutritionCalculator";
 import { globalStyles } from "../styles/GlobalStyles";
+import { profileStyles } from "../styles/ProfileStyle";
 import { AchievementContext } from "../contexts/AchievementContext";
 
 const screenWidth = Dimensions.get("window").width;
@@ -90,10 +91,10 @@ export default function WeightScreen({ navigation }) {
       const result = await addWeightEntry(db, parsedWeight, today);
       setWeight("");
       loadHistory(period);
-      // Standardized with the rest of the app: golden toast rather than an Alert
-      // blocking (previously only this screen and RecipeLogScreen used a
-      // Alert, LogScreen was already using toast -- three different behaviors
-      // for the same event).
+      // Uniformisé avec le reste de l'app : toast doré plutôt qu'une Alert
+      // bloquante (auparavant seul cet écran et RecipeLogScreen utilisaient une
+      // Alert, LogScreen utilisait déjà le toast -- trois comportements différents
+      // pour le même événement).
       notifyUnlockedAchievements(result, showAchievement);
     } catch (error) {
       console.error("Erreur lors de l'ajout de l'entrée de poids :", error);
@@ -239,7 +240,7 @@ export default function WeightScreen({ navigation }) {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={true}
-              style={{ height: 240, marginTop: 12 }}
+              style={profileStyles.chartScrollWrapper}
             >
               <LineChart
                 data={chartData}

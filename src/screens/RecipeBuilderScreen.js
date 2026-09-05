@@ -16,9 +16,9 @@ import {
   loadRecentFoods,
   notifyUnlockedAchievements,
   logRecipeEditorAbandoned,
-  deleteRecipe,
 } from "../db/Queries";
-import { globalStyles } from "../styles/GlobalStyles";
+import { globalStyles, MACRO_COLORS } from "../styles/GlobalStyles";
+import { journalStyles } from "../styles/LogStyle";
 import {
   computeScoreFromOFF,
   computeScoreFromMacros,
@@ -118,6 +118,14 @@ export default function RecipeBuilderScreen({ navigation, route }) {
     }
   }, [name, ingredients]);
 
+  useEffect(() => {
+    const scanned = route.params?.newIngredientFromScanner;
+    if (scanned) {
+      addIngredient(scanned);
+      navigation.setParams({ newIngredientFromScanner: undefined });
+    }
+  }, [route.params?.newIngredientFromScanner]);
+
   const addIngredient = (ing) => {
     setIngredients((prev) => [...prev, ing]);
     setPickerMode(null);
@@ -167,7 +175,6 @@ export default function RecipeBuilderScreen({ navigation, route }) {
       );
       return;
     }
-
     const protein = parseFloat(mProtein) || 0;
     const fiber = parseFloat(mFiber) || 0;
     const fat = parseFloat(mFat) || 0;
@@ -374,7 +381,7 @@ export default function RecipeBuilderScreen({ navigation, route }) {
 
   if (pickerMode === "search") {
     return (
-      <View style={{ flex: 1, padding: 20, paddingTop: 60 }}>
+      <View style={globalStyles.container}>
         <Text style={globalStyles.label}>Rechercher un ingrédient :</Text>
         <TextInput
           style={globalStyles.input}
@@ -392,10 +399,10 @@ export default function RecipeBuilderScreen({ navigation, route }) {
         </TouchableOpacity>
 
         {searching && (
-          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" style={journalStyles.pickerLoadingIndicator} />
         )}
 
-        <ScrollView style={{ marginTop: 10 }}>
+        <ScrollView style={journalStyles.pickerResultsList}>
           {searchResults.map((product, index) => (
             <TouchableOpacity
               key={product.code || index}
@@ -410,7 +417,7 @@ export default function RecipeBuilderScreen({ navigation, route }) {
             </TouchableOpacity>
           ))}
           {!searching && searchResults.length === 0 && searchQuery !== "" && (
-            <Text style={{ color: "#999", marginTop: 10 }}>
+            <Text style={journalStyles.pickerEmptyText}>
               Aucun résultat, essaie une recherche différente.
             </Text>
           )}
@@ -429,12 +436,12 @@ export default function RecipeBuilderScreen({ navigation, route }) {
 
   if (pickerMode === "recent") {
     return (
-      <View style={{ flex: 1, padding: 20, paddingTop: 60 }}>
+      <View style={globalStyles.container}>
         <Text style={globalStyles.label}>Aliments récents :</Text>
         {loadingRecent && (
-          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" style={journalStyles.pickerLoadingIndicator} />
         )}
-        <ScrollView style={{ marginTop: 10 }}>
+        <ScrollView style={journalStyles.pickerResultsList}>
           {recentFoods.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -446,7 +453,7 @@ export default function RecipeBuilderScreen({ navigation, route }) {
             </TouchableOpacity>
           ))}
           {!loadingRecent && recentFoods.length === 0 && (
-            <Text style={{ color: "#999", marginTop: 10 }}>
+            <Text style={journalStyles.pickerEmptyText}>
               Aucun aliment loggé pour l'instant.
             </Text>
           )}
@@ -556,41 +563,38 @@ export default function RecipeBuilderScreen({ navigation, route }) {
 
       <Text style={globalStyles.label}>Ingrédients :</Text>
       {ingredients.length === 0 && (
-        <Text style={{ color: "#999", marginBottom: 10 }}>
+        <Text style={journalStyles.noIngredientsText}>
           Aucun ingrédient ajouté pour l'instant.
         </Text>
       )}
       {ingredients.map((ing, index) => {
         const band = typeof ing.score === "number" ? getScoreBand(ing.score) : null;
         return (
-        <View key={index} style={[globalStyles.details, { marginBottom: 8 }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontWeight: "bold" }}>{ing.name}</Text>
+        <View key={index} style={[globalStyles.details, journalStyles.ingredientCardSpacing]}>
+          <View style={globalStyles.rowBetween}>
+            <Text style={journalStyles.ingredientName}>{ing.name}</Text>
             {band && (
-              <View style={{ backgroundColor: band.color, borderRadius: 6, paddingVertical: 2, paddingHorizontal: 8 }}>
-                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
+              <View style={[journalStyles.ingredientScoreBadge, { backgroundColor: band.color }]}>
+                <Text style={journalStyles.ingredientScoreBadgeText}>
                   {Math.round(ing.score)}{ing.scoreType === "estimate" ? "*" : ""}
                 </Text>
               </View>
             )}
           </View>
-          <Text style={{ color: "#666", marginBottom: 6 }}>
+          <Text style={journalStyles.ingredientCalories}>
             {Math.round(ing.calories100g)} kcal/100g
           </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={journalStyles.quantityRow}>
             <Text>Quantité (g) :</Text>
             <TextInput
-              style={[globalStyles.input, { flex: 1, marginBottom: 0 }]}
+              style={[globalStyles.input, journalStyles.quantityInput]}
               value={ing.quantityG.toString()}
               onChangeText={(value) => updateIngredientQuantity(index, value)}
               keyboardType="numeric"
             />
           </View>
           <TouchableOpacity
-            style={[
-              globalStyles.primaryButton,
-              { backgroundColor: "#e53935", marginTop: 8 },
-            ]}
+            style={[globalStyles.primaryButton, journalStyles.removeIngredientButton]}
             onPress={() => removeIngredient(index)}
           >
             <Text style={globalStyles.primaryButtonText}>Retirer</Text>
@@ -600,27 +604,27 @@ export default function RecipeBuilderScreen({ navigation, route }) {
       })}
 
       {ingredients.length > 0 && (
-        <View style={[globalStyles.infoBanner, { marginTop: 4, alignItems: "center" }]}>
+        <View style={[globalStyles.infoBanner, journalStyles.recipeTotalsBanner]}>
           <Text style={globalStyles.infoText}>
             Total recette : {Math.round(totalWeight)} g · {Math.round(totalCalories)} kcal
           </Text>
-          <View style={{ flexDirection: "row", gap: 14, marginTop: 6 }}>
-            <Text style={{ fontSize: 13, color: "#EF5350" }}>
+          <View style={journalStyles.totalsMacroRow}>
+            <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.protein }]}>
               Protéines {Math.round(totalProtein)} g
             </Text>
-            <Text style={{ fontSize: 13, color: "#FFA726" }}>
+            <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.carbs }]}>
               Glucides {Math.round(totalCarbs)} g
             </Text>
-            <Text style={{ fontSize: 13, color: "#42A5F5" }}>
+            <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.fat }]}>
               Lipides {Math.round(totalFat)} g
             </Text>
-            <Text style={{ fontSize: 13, color: "#8D6E63" }}>
+            <Text style={[journalStyles.totalsMacroText, { color: MACRO_COLORS.fiber }]}>
               Fibres {Math.round(totalFiber)} g
             </Text>
           </View>
 
           {recipeScore !== null && (
-            <View style={{ marginTop: 8 }}>
+            <View style={journalStyles.recipeScoreWrapper}>
               <ScoreBadge 
                 scoreResult={{
                   score: recipeScore,
@@ -632,10 +636,10 @@ export default function RecipeBuilderScreen({ navigation, route }) {
         </View>
       )}
 
-      <Text style={[globalStyles.label, { marginTop: 20 }]}>
+      <Text style={[globalStyles.label, journalStyles.labelSpaced]}>
         Ajouter un ingrédient :
       </Text>
-      <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+      <View style={journalStyles.addIngredientRow}>
         <TouchableOpacity
           style={[globalStyles.primaryButton, { flex: 1 }]}
           onPress={() => setPickerMode("search")}
@@ -654,6 +658,12 @@ export default function RecipeBuilderScreen({ navigation, route }) {
         >
           <Text style={globalStyles.primaryButtonText}>Manuel</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[globalStyles.primaryButton, { flex: 1 }]}
+          onPress={() => navigation.navigate("Scanner", { mode: "recipe" })}
+        >
+          <Text style={globalStyles.primaryButtonText}>Scanner</Text>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity
@@ -669,7 +679,6 @@ export default function RecipeBuilderScreen({ navigation, route }) {
           {saving ? "Enregistrement..." : "Enregistrer la recette"}
         </Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 }

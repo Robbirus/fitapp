@@ -21,6 +21,7 @@ import {
   updateBodyMeasurementEntry,
   deleteBodyMeasurementEntry,
 } from "../db/Queries";
+import { profileStyles } from "../styles/ProfileStyle";
 
 export default function MeasurementScreen({ navigation }) {
   const db = useDatabase();
@@ -287,7 +288,7 @@ export default function MeasurementScreen({ navigation }) {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={true}
-              style={{ height: 240, marginTop: 12 }}
+              style={profileStyles.chartScrollWrapper}
             >
               <LineChart
                 data={chartData}
