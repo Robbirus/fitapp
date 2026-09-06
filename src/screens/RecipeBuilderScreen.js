@@ -44,6 +44,12 @@ export default function RecipeBuilderScreen({ navigation, route }) {
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    navigation.setOptions({
+      title: isEditing ? "Modifier la recette" : "Nouvelle recette",
+    });
+  }, [navigation, isEditing]);
+
   // pickerMode : null | 'search' | 'recent' | 'manual'
   const [pickerMode, setPickerMode] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -549,10 +555,6 @@ export default function RecipeBuilderScreen({ navigation, route }) {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>
-        {isEditing ? "Modifier la recette" : "Nouvelle recette"}
-      </Text>
-
       <Text style={globalStyles.label}>Nom de la recette :</Text>
       <TextInput
         style={globalStyles.input}

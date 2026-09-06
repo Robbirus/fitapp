@@ -18,8 +18,6 @@ const DIET_STYLE_DESCRIPTIONS = {
 export default function DietStyleSection({ dietStyle, setDietStyle }) {
   return (
     <View>
-      <Text style={globalStyles.titre}>Style de régime</Text>
-
       <Text style={globalStyles.label}>Répartition des macronutriments :</Text>
       <View style={globalStyles.optionsRow}>
         {DIET_STYLE_OPTIONS.map((opt) => (

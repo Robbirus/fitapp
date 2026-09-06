@@ -179,4 +179,14 @@ export const globalStyles = StyleSheet.create({
     fontSize: 12,
     color: "#8C837B",
   },
+  menuRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  menuRowTextWrapper: { flex: 1, paddingRight: 10 },
+  menuChevron: {
+    fontSize: 24,
+    color: "#B9B2AA",
+  },
 });

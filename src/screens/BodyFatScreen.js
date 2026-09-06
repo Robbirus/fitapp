@@ -119,11 +119,6 @@ export default function BodyFatScreen({ navigation }) {
     return calculateBodyFatPercentage({ gender, height, neck, waist, hip });
   };
 
-  const computeBodyFatCategory = () => {
-    const bodyFat = computeBodyFatPercentage();
-    return obtainBodyFatCategory(bodyFat, gender);
-  };
-
   const bodyFat = computeBodyFatPercentage();
   if (bodyFat === null) {
     return (
@@ -148,6 +143,8 @@ export default function BodyFatScreen({ navigation }) {
   }
 
   const isStale = daysOld !== null && daysOld > 3;
+
+  const bodyFatCategory = obtainBodyFatCategory(bodyFat, gender);
 
   const smm = calculateSkeletalMuscleMass({
     weight,
@@ -196,13 +193,28 @@ export default function BodyFatScreen({ navigation }) {
         </View>
       )}
       <Text style={globalStyles.subTitle}>Graisse corporelle</Text>
-      <Text style={globalStyles.label}>
-        Pourcentage de graisse corporelle:{" "}
-        {computeBodyFatPercentage().toFixed(2)}%
-      </Text>
-      <Text style={globalStyles.label}>
-        Catégorie (basée sur le % de masse grasse): {computeBodyFatCategory()}
-      </Text>
+      <View style={globalStyles.card}>
+        <Text style={bodyCompositionStyles.mainTitle}>
+          VOTRE MASSE GRASSE
+        </Text>
+        <Text style={bodyCompositionStyles.heroValue}>{bodyFat.toFixed(1)}</Text>
+        <Text style={bodyCompositionStyles.unitText}>%</Text>
+        <View
+          style={[
+            bodyCompositionStyles.pillBadge,
+            { backgroundColor: getCategoryColors(bodyFatCategory).bg },
+          ]}
+        >
+          <Text
+            style={[
+              bodyCompositionStyles.pillBadgeText,
+              { color: getCategoryColors(bodyFatCategory).text },
+            ]}
+          >
+            {bodyFatCategory}
+          </Text>
+        </View>
+      </View>
 
       {smi !== null && smiThreshold && (
         <>

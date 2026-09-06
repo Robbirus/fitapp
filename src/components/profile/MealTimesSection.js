@@ -8,8 +8,6 @@ export default function MealTimesSection({ mealTimes, setMealTimes, waterGoal, s
 
   return (
     <View>
-      <Text style={globalStyles.titre}>Horaires & Hydratation</Text>
-
       <Text style={globalStyles.label}>Petit-déjeuner :</Text>
       <TextInput
         style={globalStyles.input}

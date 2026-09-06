@@ -57,8 +57,6 @@ export default function RecipesScreen({ navigation }) {
 
   return (
     <View style={globalStyles.container}>
-      <Text style={globalStyles.titre}>Mes recettes</Text>
-
       <TouchableOpacity
         style={globalStyles.primaryButton}
         activeOpacity={0.6}

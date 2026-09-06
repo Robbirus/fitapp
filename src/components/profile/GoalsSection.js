@@ -1,14 +1,14 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { globalStyles } from "../../styles/GlobalStyles";
 
-const ACTIVITY_OPTIONS = [
+export const ACTIVITY_OPTIONS = [
   { value: "sedentary", label: "Sédentaire" },
   { value: "light", label: "Léger" },
   { value: "moderate", label: "Modéré" },
   { value: "active", label: "Intense" },
 ];
 
-const GOAL_OPTIONS = [
+export const GOAL_OPTIONS = [
   { value: "lose", label: "Perdre" },
   { value: "maintain", label: "Maintenir" },
   { value: "gain", label: "Prendre" },
@@ -21,8 +21,6 @@ export default function GoalsSection({
 }) {
   return (
     <View>
-      <Text style={globalStyles.titre}>Objectifs & Activité</Text>
-
       <Text style={globalStyles.label}>Niveau d'activité :</Text>
       <View style={globalStyles.optionsRow}>
         {ACTIVITY_OPTIONS.map((opt) => (

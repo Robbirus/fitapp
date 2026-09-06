@@ -10,7 +10,11 @@ const Stack = createNativeStackNavigator();
 export default function JournalStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Accueil" component={LogScreen} />
+      <Stack.Screen
+        name="Accueil"
+        component={LogScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="Scanner" component={ScannerScreen} />
       <Stack.Screen
         name="Recipes"

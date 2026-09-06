@@ -308,8 +308,6 @@ export default function ScannerScreen({ navigation, route }) {
         today,
         selectedMeal,
       );
-      // BUG FIX: le résultat (et donc les succès potentiellement débloqués comme
-      // "photosynthese" ou "premier_classe") était auparavant ignoré ici.
       const unlocked = notifyUnlockedAchievements(result, showAchievement);
       if (unlocked.length === 0) {
         Alert.alert("Ajouté !", `${name} a été ajouté au journal.`);

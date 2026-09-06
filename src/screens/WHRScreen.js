@@ -93,7 +93,6 @@ export default function WHRScreen({ navigation }) {
 
       {whr !== null && (
         <>
-          <Text style={globalStyles.subTitle}>Rapport Taille-Hanche (RTH)</Text>
           <View style={globalStyles.card}>
             <Text style={bodyCompositionStyles.mainTitle}>
               VOTRE RATIO TAILLE-HANCHE
@@ -227,9 +226,6 @@ export default function WHRScreen({ navigation }) {
 
       {whtr !== null && (
         <>
-          <Text style={globalStyles.subTitle}>
-            Rapport Taille-Taille (WHtR)
-          </Text>
           <View style={globalStyles.card}>
             <Text style={bodyCompositionStyles.mainTitle}>
               VOTRE RATIO TAILLE-TAILLE

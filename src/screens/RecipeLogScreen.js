@@ -40,6 +40,10 @@ export default function RecipeLogScreen({ navigation, route }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (recipeName) navigation.setOptions({ title: recipeName });
+  }, [navigation, recipeName]);
+
+  useEffect(() => {
     const load = async () => {
       if (!db || !recipeId) return;
       try {
@@ -181,8 +185,6 @@ export default function RecipeLogScreen({ navigation, route }) {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>{recipeName}</Text>
-
             {dishScore !== null && (
               <View style={journalStyles.scoreBadgeWrapper}>
                 <ScoreBadge 

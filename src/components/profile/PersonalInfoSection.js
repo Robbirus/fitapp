@@ -12,8 +12,6 @@ export default function PersonalInfoSection({
 }) {
   return (
     <View>
-      <Text style={globalStyles.titre}>Informations personnelles</Text>
-
       <Text style={globalStyles.label}>Nom :</Text>
       <TextInput style={globalStyles.input} value={name} onChangeText={setName} />
 

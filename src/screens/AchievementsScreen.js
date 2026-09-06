@@ -99,7 +99,6 @@ export default function AchievementsScreen() {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>Succès</Text>
       <Text
         style={[globalStyles.sectionSubtitle, { textAlign: "center", marginBottom: 20 }]}
       >

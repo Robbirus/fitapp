@@ -96,7 +96,6 @@ export default function RemindersScreen() {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>Rappels d'eau</Text>
       <Text style={[globalStyles.sectionSubtitle, { marginBottom: 16 }]}>
         Reçois une notification à intervalle régulier pendant la journée pour
         penser à t'hydrater.

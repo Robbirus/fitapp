@@ -81,8 +81,6 @@ export default function TrendsScreen() {
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
-      <Text style={globalStyles.titre}>Tendances</Text>
-
       <View style={[globalStyles.optionsRow, { marginBottom: 16 }]}>
         {PERIOD_OPTIONS.map((opt) => (
           <TouchableOpacity

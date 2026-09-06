@@ -77,7 +77,6 @@ export default function BMIScreen({ navigation }) {
         </View>
       )}
 
-      <Text style={globalStyles.subTitle}>Indice de Masse Corporelle (IMC)</Text>
       <View style={globalStyles.card}>
         <Text style={bodyCompositionStyles.mainTitle}>VOTRE IMC</Text>
         <Text style={bodyCompositionStyles.heroValue}>{bmi.toFixed(1)}</Text>
