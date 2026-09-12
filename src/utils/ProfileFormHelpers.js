@@ -19,6 +19,7 @@ export async function loadProfileFormData(db) {
     activityLevel: p.activity_level,
     weightGoal: p.weight_goal,
     weightGoalRate: p.weight_goal_rate,
+    targetWeight: p.target_weight ? p.target_weight.toString() : "",
     dietStyle: p.diet_style || "balanced",
     mealTimes: p.meal_times
       ? JSON.parse(p.meal_times)
@@ -38,6 +39,10 @@ export async function saveProfileFormData(db, form) {
     activityLevel: form.activityLevel,
     weightGoal: form.weightGoal,
     weightGoalRate: form.weightGoal === "maintain" ? 0 : form.weightGoalRate,
+    targetWeight:
+      form.weightGoal !== "maintain" && form.targetWeight
+        ? parseFloat(form.targetWeight)
+        : null,
     dietStyle: form.dietStyle,
     goalStartDate: getTodayISO(),
     goalStartWeight: form.latestWeight,

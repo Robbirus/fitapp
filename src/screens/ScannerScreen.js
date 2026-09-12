@@ -345,23 +345,27 @@ export default function ScannerScreen({ navigation, route }) {
     }
 
     const scoreResult = getCurrentScore();
-
-    navigation.navigate("RecipeBuilder", {
-      newIngredientFromScanner: {
-        name: name.trim(),
-        calories100g: parsedCalories,
-        protein100g: parseFloat(protein100g) || 0,
-        carbs100g: parseFloat(carbs100g) || 0,
-        fat100g: parseFloat(fat100g) || 0,
-        fiber100g: parseFloat(fiber100g) || 0,
-        quantityG: quantity,
-        score: scoreResult.score,
-        scoreType: scoreResult.scoreType,
-        nutriscoreGrade: scoreResult.nutriscoreGrade,
-        isOrganic: scoreResult.isOrganic,
-        originCategory: scoreResult.originCategory,
+    
+    navigation.navigate(
+      "RecipeBuilder",
+      {
+        newIngredientFromScanner: {
+          name: name.trim(),
+          calories100g: parsedCalories,
+          protein100g: parseFloat(protein100g) || 0,
+          carbs100g: parseFloat(carbs100g) || 0,
+          fat100g: parseFloat(fat100g) || 0,
+          fiber100g: parseFloat(fiber100g) || 0,
+          quantityG: quantity,
+          score: scoreResult.score,
+          scoreType: scoreResult.scoreType,
+          nutriscoreGrade: scoreResult.nutriscoreGrade,
+          isOrganic: scoreResult.isOrganic,
+          originCategory: scoreResult.originCategory,
+        },
       },
-    });
+      { merge: true },
+    );
   };
 
   const resetScan = () => {

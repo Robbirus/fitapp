@@ -350,7 +350,7 @@ export async function updateProfileSettings(db, profile) {
     `UPDATE profileSettings
      SET name = ?, height = ?, age = ?, gender = ?, activity_level = ?,
          weight_goal = ?, weight_goal_rate = ?, goal_start_date = ?, goal_start_weight = ?, ethnicity = ?,
-         meal_times = ?, water_goal = ?, diet_style = ?
+         meal_times = ?, water_goal = ?, diet_style = ?, target_weight = ?
      WHERE id = 1`,
     [
       profile.name,
@@ -366,6 +366,7 @@ export async function updateProfileSettings(db, profile) {
       profile.mealTimes,
       profile.waterGoal,
       profile.dietStyle,
+      profile.targetWeight,
     ],
   );
 

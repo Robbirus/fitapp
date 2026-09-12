@@ -116,10 +116,12 @@ export default function WeightScreen({ navigation }) {
     }
 
     try {
-      await updateWeightEntry(db, editingId, parsedValue, item.date);
+      const result = await updateWeightEntry(db, editingId, parsedValue, item.date);
+      notifyUnlockedAchievements(result, showAchievement);
     } catch (error) {
       console.log(error);
       Alert.alert("Erreur", "Impossible de modifier ce poids.");
+      return;
     }
     setEditingId(null);
     loadHistory(period);
@@ -173,7 +175,8 @@ export default function WeightScreen({ navigation }) {
           text: "Supprimer",
           style: "destructive",
           onPress: async () => {
-            await deleteWeightEntry(db, id);
+            const result = await deleteWeightEntry(db, id);
+            notifyUnlockedAchievements(result, showAchievement);
             loadHistory(period);
           },
         },

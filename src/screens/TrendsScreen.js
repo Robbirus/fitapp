@@ -8,7 +8,9 @@ import {
   loadCaloriesPerDay,
   loadMacrosPerDay,
   loadSettings,
+  loadProfileSettings,
 } from "../db/Queries";
+import { calculateProjectedWeight } from "../utils/NutritionCalculator";
 import { getDateNDaysAgoISO } from "../utils/DateHelpers";
 import { globalStyles } from "../styles/GlobalStyles";
 import { dashboardStyles } from "../styles/DashboardStyle";
@@ -37,6 +39,7 @@ export default function TrendsScreen() {
   const [caloriesPerDay, setCaloriesPerDay] = useState([]);
   const [macrosPerDay, setMacrosPerDay] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,16 +50,18 @@ export default function TrendsScreen() {
   const loadAll = async (selectedPeriod) => {
     const days = selectedPeriod === "week" ? 7 : selectedPeriod === "month" ? 30 : 365;
     const sinceDate = getDateNDaysAgoISO(days);
-    const [weights, calories, macros, s] = await Promise.all([
+    const [weights, calories, macros, s, p] = await Promise.all([
       loadWeightHistorySince(db, sinceDate),
       loadCaloriesPerDay(db, sinceDate),
       loadMacrosPerDay(db, sinceDate),
       loadSettings(db),
+      loadProfileSettings(db),
     ]);
     setWeightHistory(weights);
     setCaloriesPerDay(calories);
     setMacrosPerDay(macros);
     setSettings(s);
+    setProfile(p);
   };
 
   const selectPeriod = (newPeriod) => setPeriod(newPeriod);
@@ -78,6 +83,18 @@ export default function TrendsScreen() {
   const recentWeights = sample(weightHistory);
   const recentCalories = sample(caloriesPerDay);
   const recentMacros = sample(macrosPerDay);
+
+  const goalLine = profile
+    ? recentWeights.map((item) =>
+        calculateProjectedWeight({
+          goalStartDate: profile.goal_start_date,
+          goalStartWeight: profile.goal_start_weight,
+          weightGoal: profile.weight_goal,
+          weightGoalRate: profile.weight_goal_rate,
+          targetDate: item.date,
+        }),
+      )
+    : [];
 
   return (
     <ScrollView contentContainerStyle={globalStyles.scrollContainer}>
@@ -110,7 +127,22 @@ export default function TrendsScreen() {
             <LineChart
               data={{
                 labels: labelsFor(recentWeights),
-                datasets: [{ data: recentWeights.map((w) => w.value) }],
+                datasets: [
+                  { data: recentWeights.map((w) => w.value), color: () => "rgba(76, 175, 80, 1)" },
+                  ...(profile?.goal_start_date
+                    ? [{ data: goalLine, color: () => "rgba(255, 99, 132, 1)" }]
+                    : []),
+                  ...(profile?.target_weight
+                    ? [
+                        {
+                          data: recentWeights.map(() => profile.target_weight),
+                          color: () => "rgba(142, 68, 173, 1)",
+                          strokeDashArray: [6, 6],
+                          withDots: false,
+                        },
+                      ]
+                    : []),
+                ],
               }}
               width={Math.max(screenWidth - 40, recentWeights.length * 40)}
               height={200}
@@ -118,6 +150,24 @@ export default function TrendsScreen() {
               bezier
             />
           </ScrollView>
+        )}
+        {recentWeights.length > 0 && (
+          <View style={globalStyles.legendRow}>
+            <View style={[globalStyles.legendDot, { backgroundColor: "rgba(76, 175, 80, 1)" }]} />
+            <Text>Poids réel</Text>
+            {profile?.goal_start_date && (
+              <>
+                <View style={[globalStyles.legendDot, { backgroundColor: "rgba(255, 99, 132, 1)" }]} />
+                <Text>Objectif</Text>
+              </>
+            )}
+            {profile?.target_weight && (
+              <>
+                <View style={[globalStyles.legendDot, { backgroundColor: "rgba(142, 68, 173, 1)" }]} />
+                <Text>Poids cible</Text>
+              </>
+            )}
+          </View>
         )}
       </View>
 

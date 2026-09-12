@@ -6,6 +6,7 @@ export const DIET_STYLE_OPTIONS = [
   { value: "keto", label: "Cétogène" },
   { value: "high_protein", label: "Riche en protéines" },
   { value: "low_carb", label: "Faible en glucides" },
+  { value: "recomp", label: "Recomposition corporelle" },
 ];
 
 const DIET_STYLE_DESCRIPTIONS = {
@@ -13,6 +14,8 @@ const DIET_STYLE_DESCRIPTIONS = {
   keto: "Glucides très bas (~25g/jour), protéines modérées, lipides en majorité.",
   high_protein: "Apport en protéines nettement augmenté pour la prise ou le maintien de muscle.",
   low_carb: "Glucides plafonnés à environ 20% des calories totales.",
+  recomp:
+    "Déficit calorique fixe de 10% (indépendant de l'objectif de poids) et apport protéique élevé (2,1 g/kg) pour perdre du gras tout en préservant le muscle.",
 };
 
 export default function DietStyleSection({ dietStyle, setDietStyle }) {

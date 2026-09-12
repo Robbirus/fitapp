@@ -59,7 +59,8 @@ export function DatabaseProvider({ children }) {
             ethnicity TEXT NOT NULL DEFAULT 'caucasian',
             meal_times TEXT DEFAULT '{"breakfast":"08:00","lunch":"12:30","snack":"16:30","dinner":"20:00"}',
             water_goal REAL DEFAULT 2.0,
-            diet_style TEXT NOT NULL DEFAULT 'balanced'
+            diet_style TEXT NOT NULL DEFAULT 'balanced',
+            target_weight REAL
           );
 
           INSERT OR IGNORE INTO profileSettings (id) VALUES (1);
@@ -151,6 +152,10 @@ export function DatabaseProvider({ children }) {
 
         try {
           await database.execAsync(`ALTER TABLE profileSettings ADD COLUMN diet_style TEXT NOT NULL DEFAULT 'balanced';`);
+        } catch (e) { /* La colonne existe déjà */ }
+
+        try {
+          await database.execAsync(`ALTER TABLE profileSettings ADD COLUMN target_weight REAL;`);
         } catch (e) { /* La colonne existe déjà */ }
 
         const reminderColumns = [

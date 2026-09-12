@@ -9,6 +9,12 @@ const ACTIVITY_MULTIPLIERS = {
 // 1 kg of fat = 7700 kcal
 const KCAL_PER_KG = 7700;
 
+// Body recomposition: fixed 10% deficit in the TDEE (independent of rhythm)
+// kg/week chosen in the Objectives tab + high protein intake to preserve
+// the muscle during the deficit. 2.1 g/kg = middle of the recommended range 2.0-2.2 g/kg.
+const RECOMP_DEFICIT_RATIO = 0.9;
+const RECOMP_PROTEIN_PER_KG = 2.1;
+
 export function calculateGoals({
   weight,
   height,
@@ -35,15 +41,22 @@ export function calculateGoals({
   const tdee = bmr * multiplier;
 
   // 3. Adjustment according to the weight target
-  const signedRate =
-    weightGoal === "lose"
-      ? -weightGoalRate
-      : weightGoal === "gain"
-        ? weightGoalRate
-        : 0;
-  const dailyAdjustment = (signedRate * KCAL_PER_KG) / 7;
-
-  const calorieGoal = Math.round(tdee + dailyAdjustment);
+  // La recomposition corporelle impose son propre déficit fixe de 10% du TDEE,
+  // indépendamment de l'objectif "Perdre/Maintenir/Prendre" choisi ailleurs dans le
+  // profil : on cherche à rester quasi stable sur la balance pendant qu'on recompose.
+  let calorieGoal;
+  if (dietStyle === "recomp") {
+    calorieGoal = Math.round(tdee * RECOMP_DEFICIT_RATIO);
+  } else {
+    const signedRate =
+      weightGoal === "lose"
+        ? -weightGoalRate
+        : weightGoal === "gain"
+          ? weightGoalRate
+          : 0;
+    const dailyAdjustment = (signedRate * KCAL_PER_KG) / 7;
+    calorieGoal = Math.round(tdee + dailyAdjustment);
+  }
 
   // 4. Macros - the distribution depends on the diet style chosen in the profile
   // The calculation is always done in 2 steps: we set 2 macros according to the style,
@@ -51,6 +64,18 @@ export function calculateGoals({
   let proteinGoal, fatGoal, carbsGoal;
 
   switch (dietStyle) {
+    case "recomp":
+      // Body composition: high protein (2.0-2.2 g/kg) to preserve/
+      // build muscle despite the deficit, lipids such as a balanced diet,
+      // carbohydrates in adjustment.
+      proteinGoal = Math.round(weight * RECOMP_PROTEIN_PER_KG);
+      fatGoal = Math.round(weight * 0.8);
+      carbsGoal = Math.max(
+        0,
+        Math.round((calorieGoal - proteinGoal * 4 - fatGoal * 9) / 4),
+      );
+      break;
+
     case "keto":
       // Ketogenic: very low carbohydrates (fixed, independent of weight), moderate proteins
       // (not too high so as not to break the ketosis via gluconeogenesis), lipids in filling
@@ -127,4 +152,26 @@ export function calculateProjectedWeight({
   const projected = goalStartWeight + sign * weightGoalRate * weeksElapsed;
 
   return Math.round(projected * 10) / 10; // rounded to 1 decimal place
+}
+
+export function estimateGoalDate({
+  goalStartDate,
+  goalStartWeight,
+  weightGoal,
+  weightGoalRate,
+  targetWeight,
+}) {
+  if (!goalStartDate || !goalStartWeight || !targetWeight || !weightGoalRate) {
+    return null;
+  }
+  if (weightGoal === "maintain") return null; // pas de trajectoire à projeter
+
+  const sign = weightGoal === "lose" ? -1 : 1;
+  const weeksNeeded = (targetWeight - goalStartWeight) / (sign * weightGoalRate);
+
+  if (!Number.isFinite(weeksNeeded) || weeksNeeded <= 0) return null;
+
+  const start = new Date(goalStartDate);
+  const target = new Date(start.getTime() + weeksNeeded * 7 * 24 * 60 * 60 * 1000);
+  return target.toISOString().slice(0, 10); // YYYY-MM-DD
 }

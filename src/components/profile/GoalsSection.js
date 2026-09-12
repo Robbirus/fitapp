@@ -1,5 +1,7 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import { globalStyles } from "../../styles/GlobalStyles";
+import { estimateGoalDate } from "../../utils/NutritionCalculator";
+import { getTodayISO } from "../../utils/DateHelpers";
 
 export const ACTIVITY_OPTIONS = [
   { value: "sedentary", label: "Sédentaire" },
@@ -17,8 +19,27 @@ export const GOAL_OPTIONS = [
 const RATE_OPTIONS = [0.25, 0.5, 0.75, 1];
 
 export default function GoalsSection({
-  activityLevel, setActivityLevel, weightGoal, setWeightGoal, weightGoalRate, setWeightGoalRate, latestWeight
+  activityLevel, setActivityLevel, weightGoal, setWeightGoal, weightGoalRate, setWeightGoalRate,
+  targetWeight, setTargetWeight, latestWeight
 }) {
+  const parsedTarget = parseFloat(targetWeight);
+  const hasValidTarget = latestWeight && !isNaN(parsedTarget) && parsedTarget > 0;
+  const alreadyThere = hasValidTarget && Math.abs(parsedTarget - latestWeight) < 0.05;
+
+  const estimatedDate =
+    weightGoal !== "maintain" && hasValidTarget && !alreadyThere
+      ? estimateGoalDate({
+          goalStartDate: getTodayISO(),
+          goalStartWeight: latestWeight,
+          weightGoal,
+          weightGoalRate,
+          targetWeight: parsedTarget,
+        })
+      : null;
+
+  const targetGoesWrongWay =
+    weightGoal !== "maintain" && hasValidTarget && !alreadyThere && !estimatedDate;
+
   return (
     <View>
       <Text style={globalStyles.label}>Niveau d'activité :</Text>
@@ -67,6 +88,34 @@ export default function GoalsSection({
               </TouchableOpacity>
             ))}
           </View>
+
+          <Text style={globalStyles.label}>Poids cible (kg) :</Text>
+          <TextInput
+            style={globalStyles.input}
+            value={targetWeight}
+            onChangeText={setTargetWeight}
+            keyboardType="numeric"
+            placeholder="ex: 70"
+          />
+
+          {alreadyThere && (
+            <Text style={globalStyles.weightInfo}>
+              Tu as déjà atteint ce poids !
+            </Text>
+          )}
+          {estimatedDate && (
+            <Text style={globalStyles.weightInfo}>
+              Objectif estimé atteint autour du {estimatedDate}, à un rythme de{" "}
+              {weightGoalRate} kg/semaine.
+            </Text>
+          )}
+          {targetGoesWrongWay && (
+            <Text style={[globalStyles.weightInfo, { color: "#e53935" }]}>
+              {weightGoal === "lose"
+                ? "Ce poids cible est supérieur à ton poids actuel : incohérent avec l'objectif \"Perdre\"."
+                : "Ce poids cible est inférieur à ton poids actuel : incohérent avec l'objectif \"Prendre\"."}
+            </Text>
+          )}
         </>
       )}
 

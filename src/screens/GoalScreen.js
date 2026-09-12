@@ -39,6 +39,7 @@ export default function GoalsScreen() {
         activityLevel={form.activityLevel} setActivityLevel={set("activityLevel")}
         weightGoal={form.weightGoal} setWeightGoal={set("weightGoal")}
         weightGoalRate={form.weightGoalRate} setWeightGoalRate={set("weightGoalRate")}
+        targetWeight={form.targetWeight} setTargetWeight={set("targetWeight")}
         latestWeight={form.latestWeight}
       />
       <TouchableOpacity style={globalStyles.primaryButton} activeOpacity={0.6} onPress={save}>
